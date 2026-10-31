@@ -43,6 +43,10 @@
     <div id="lobby-screen" class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 text-center border-t-8 border-red-600 mt-10">
         <h2 class="text-2xl font-bold mb-6 text-gray-900">Multiplayer Lobby</h2>
         <div class="space-y-4">
+            <div class="mb-2 text-left">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Your Name</label>
+                <input type="text" id="player-name" placeholder="DM or Character Name" class="w-full border-2 border-gray-300 rounded-lg p-3 font-bold text-lg focus:border-blue-500 focus:outline-none">
+            </div>
             <button onclick="hostGame()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">
                 👑 Host New Game
             </button>
@@ -70,18 +74,19 @@
 
     <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 hidden">
         
-        <!-- Dice Roller Panel -->
+        <!-- Game Log & Dice Roller Panel -->
         <section class="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 border-l-8 border-l-blue-500">
             <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center">
-                🎲 Session Dice Roller
+                🎲 Session Log & Dice Roller
             </h2>
-            <div class="flex flex-col md:flex-row gap-6">
-                <div class="flex-1">
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- Dice Controls -->
+                <div class="md:w-1/3">
                     <div class="flex items-center gap-2 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-200">
                         <label class="font-bold text-sm text-gray-600">Modifier (+/-):</label>
                         <input type="number" id="dice-mod" value="0" class="w-16 border border-gray-300 rounded p-1 text-center font-bold focus:border-blue-500 focus:outline-none">
                     </div>
-                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    <div class="grid grid-cols-3 gap-2">
                         <button onclick="rollDice(4)" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-2 rounded shadow-sm border border-blue-200 transition-colors">d4</button>
                         <button onclick="rollDice(6)" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-2 rounded shadow-sm border border-blue-200 transition-colors">d6</button>
                         <button onclick="rollDice(8)" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-2 rounded shadow-sm border border-blue-200 transition-colors">d8</button>
@@ -90,11 +95,21 @@
                         <button onclick="rollDice(20)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow-sm transition-colors">d20</button>
                     </div>
                 </div>
-                <div class="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-3 h-32 flex flex-col relative">
+                
+                <!-- Game Log -->
+                <div class="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-3 h-36 flex flex-col relative">
                     <button onclick="clearDiceLog()" class="absolute top-2 right-2 text-xs text-gray-400 hover:text-red-500">Clear</button>
-                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Roll History</h3>
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Game Log</h3>
                     <ul id="dice-log" class="flex-1 overflow-y-auto text-sm space-y-1 font-mono">
-                        <li class="text-gray-400 italic">Roll history will appear here...</li>
+                        <li class="text-gray-400 italic">Game events and rolls will appear here...</li>
+                    </ul>
+                </div>
+
+                <!-- Live Players -->
+                <div class="md:w-1/4 bg-gray-50 rounded-xl border border-gray-200 p-3 h-36 flex flex-col">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Session Players</h3>
+                    <ul id="live-players-list" class="flex-1 overflow-y-auto text-sm space-y-2 font-semibold text-gray-700">
+                        <!-- Players injected here -->
                     </ul>
                 </div>
             </div>
@@ -148,33 +163,60 @@
 
         let appState = [];
         let diceLog = [];
+        let sessionPlayers = []; // Track who is in the game
         let autoSaveTimeout = null;
         let currentRoomCode = null;
         let isSyncing = false; 
+        let localPlayerName = "Anonymous"; // Stores the player's name locally
 
         const statusConditions = ["Normal", "Burned", "Paralyzed", "Poisoned", "Asleep", "Frozen", "Confused", "Flinch", "Badly Poisoned", "Fainted"];
+
+        // Initialize player name from local storage if they've played before
+        setTimeout(() => {
+            const savedName = localStorage.getItem('poke5e_player_name');
+            if (savedName) {
+                const nameInput = document.getElementById('player-name');
+                if (nameInput) nameInput.value = savedName;
+            }
+        }, 100);
+
+        function savePlayerName() {
+            const nameInput = document.getElementById('player-name');
+            if (nameInput && nameInput.value.trim() !== '') {
+                localPlayerName = nameInput.value.trim();
+                localStorage.setItem('poke5e_player_name', localPlayerName); // Remember for next time
+            }
+        }
 
         // --- Multiplayer Lobby System ---
         window.hostGame = async function() {
             if (!db) { alert("Database connection not ready."); return; }
+            savePlayerName();
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             
             try {
-                await setDoc(doc(db, "rooms", code), { trainers: [], diceLog: [] });
-                joinRoom(code);
+                const initialLog = [`<span class="text-green-600 font-bold">👑 ${localPlayerName} created the room!</span>`];
+                await setDoc(doc(db, "rooms", code), { 
+                    trainers: [], 
+                    diceLog: initialLog,
+                    players: [localPlayerName] // Register the host
+                });
+                joinRoom(code, true);
             } catch(e) {
+                console.error("FIREBASE ERROR:", e);
                 const errorEl = document.getElementById('lobby-error');
-                errorEl.innerText = "Database error. Make sure Firestore Rules allow read, write: if true;";
+                errorEl.innerText = "Error: " + e.message;
                 errorEl.classList.remove('hidden');
             }
         }
 
         window.joinGameBtn = function() {
+            savePlayerName();
             const code = document.getElementById('join-code').value.toUpperCase();
-            if (code.length === 4) joinRoom(code);
+            if (code.length === 4) joinRoom(code, false);
         }
 
-        async function joinRoom(code) {
+        async function joinRoom(code, isHosting = false) {
             if (!db) return;
             const errorEl = document.getElementById('lobby-error');
             
@@ -189,14 +231,30 @@
                     document.getElementById('main-content').classList.remove('hidden');
                     document.getElementById('display-room-code').innerText = code;
                     
+                    // Register the player and broadcast their entry if they aren't the host
+                    if (!isHosting) {
+                        appState = roomSnap.data().trainers || [];
+                        diceLog = roomSnap.data().diceLog || [];
+                        sessionPlayers = roomSnap.data().players || [];
+                        
+                        if (!sessionPlayers.includes(localPlayerName)) {
+                            sessionPlayers.push(localPlayerName);
+                            diceLog.push(`<span class="text-green-600 font-bold">👋 ${localPlayerName} joined the game!</span>`);
+                            if(diceLog.length > 30) diceLog.shift();
+                            saveData(true); 
+                        }
+                    }
+                    
                     // Listen for live updates
                     onSnapshot(roomRef, (snapshot) => {
                         if (snapshot.exists()) {
                             isSyncing = true;
                             appState = snapshot.data().trainers || [];
                             diceLog = snapshot.data().diceLog || [];
+                            sessionPlayers = snapshot.data().players || [];
                             render();
                             renderDiceLog();
+                            renderPlayers(); // Keep player list updated
                             setTimeout(() => isSyncing = false, 100);
                         }
                     });
@@ -214,7 +272,11 @@
 
         function saveData(silent = false) {
             if (!currentRoomCode || isSyncing) return;
-            setDoc(doc(db, "rooms", currentRoomCode), { trainers: appState, diceLog: diceLog });
+            setDoc(doc(db, "rooms", currentRoomCode), { 
+                trainers: appState, 
+                diceLog: diceLog,
+                players: sessionPlayers 
+            });
             if (!silent) displayToast();
         }
 
@@ -279,10 +341,10 @@
             const total = roll + mod;
             
             const modString = mod === 0 ? '' : (mod > 0 ? ` + ${mod}` : ` - ${Math.abs(mod)}`);
-            const entry = `<span class="text-blue-600 font-bold">[d${sides}]</span> Rolled ${roll}${modString} = <span class="font-bold text-gray-900">${total}</span>`;
+            const entry = `<span class="text-gray-800 font-bold">${localPlayerName}</span>: <span class="text-blue-600 font-bold">[d${sides}]</span> Rolled ${roll}${modString} = <span class="font-bold text-gray-900">${total}</span>`;
             
             diceLog.push(entry);
-            if(diceLog.length > 20) diceLog.shift();
+            if(diceLog.length > 30) diceLog.shift(); // Increased to 30 so multiple player rolls fit better
             saveData(true);
         }
 
@@ -291,10 +353,28 @@
         function renderDiceLog() {
             const logEl = document.getElementById('dice-log');
             if (diceLog.length === 0) {
-                logEl.innerHTML = '<li class="text-gray-400 italic">Roll history will appear here...</li>';
+                logEl.innerHTML = '<li class="text-gray-400 italic">Game events and rolls will appear here...</li>';
                 return;
             }
             logEl.innerHTML = diceLog.map(log => `<li>${log}</li>`).reverse().join('');
+        }
+
+        function renderPlayers() {
+            const listEl = document.getElementById('live-players-list');
+            if (!listEl) return;
+            if (sessionPlayers.length === 0) {
+                listEl.innerHTML = '<li class="text-gray-400 italic text-xs">No players detected.</li>';
+                return;
+            }
+            listEl.innerHTML = sessionPlayers.map(p => `
+                <li class="flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    ${p}
+                </li>
+            `).join('');
         }
 
         // --- Event Delegation ---
@@ -307,13 +387,13 @@
                 const value = target.type === 'number' ? Number(target.value) : target.value;
 
                 if (mindex !== undefined) {
-                    appState[tindex].pokemon[pindex].moves[mindex][field] = value;
+                    appState[tIndex].pokemon[pIndex].moves[mindex][field] = value;
                 } else if (pindex !== undefined) {
-                    appState[tindex].pokemon[pindex][field] = value;
+                    appState[tIndex].pokemon[pIndex][field] = value;
                 } else if (type === 'stat') {
-                    appState[tindex].stats[field] = value;
+                    appState[tIndex].stats[field] = value;
                 } else {
-                    appState[tindex][field] = value;
+                    appState[tIndex][field] = value;
                 }
                 debouncedSave();
             });
