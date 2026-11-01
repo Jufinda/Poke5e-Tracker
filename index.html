@@ -30,14 +30,14 @@
     <datalist id="abilities-datalist"></datalist>
     <datalist id="tms-datalist"></datalist>
     <datalist id="paths-datalist">
-        <option value="Ace Trainer">+1 to hit/damage rolls, Battle Dice superiority</option>
-        <option value="Pokémon Collector">Extra Pokéslots & Capture DC bonuses</option>
-        <option value="Nurse">Pokécenter healing & status cure specialist</option>
-        <option value="Pokéchef">Berry & meal buffs during Short/Long Rests</option>
-        <option value="Researcher">Pokedex analysis, Evolution & TM mastery</option>
-        <option value="Tactician">Command allies, battlefield control & swap actions</option>
-        <option value="Commander">Aura buffs & multi-target leadership</option>
-        <option value="Ranger">Wilderness survival, Nature & Biome mastery</option>
+        <option value="Ace Trainer">Ace Trainer (+1 to hit/damage rolls, Battle Dice superiority)</option>
+        <option value="Pokémon Collector">Pokémon Collector (Extra Pokéslots & Capture DC bonuses)</option>
+        <option value="Nurse">Nurse (Pokécenter healing & status cure specialist)</option>
+        <option value="Pokéchef">Pokéchef (Berry & meal buffs during Short/Long Rests)</option>
+        <option value="Researcher">Researcher (Pokedex analysis, Evolution & TM mastery)</option>
+        <option value="Tactician">Tactician (Command allies, battlefield control & swap actions)</option>
+        <option value="Commander">Commander (Aura buffs & multi-target leadership)</option>
+        <option value="Ranger">Ranger (Wilderness survival, Nature & Biome mastery)</option>
     </datalist>
     <datalist id="specs-datalist">
         <option value="None"></option>
@@ -85,6 +85,19 @@
         <option value="Terastallize">Change elemental type once per Long Rest</option>
         <option value="Tireless">+1 CON, +1 PP to all moves</option>
         <option value="Tough">Max HP increases by 2x Level</option>
+    </datalist>
+    <datalist id="origins-datalist">
+        <option value="Kanto">Kanto Region Origin</option>
+        <option value="Johto">Johto Region Origin</option>
+        <option value="Hoenn">Hoenn Region Origin</option>
+        <option value="Sinnoh">Sinnoh Region Origin</option>
+        <option value="Unova">Unova Region Origin</option>
+        <option value="Kalos">Kalos Region Origin</option>
+        <option value="Alola">Alola Region Origin</option>
+        <option value="Galar">Galar Region Origin</option>
+        <option value="Paldea">Paldea Region Origin</option>
+        <option value="Orre">Orre Region Origin</option>
+        <option value="Wanderer">Wanderer / Outlander</option>
     </datalist>
 
     <!-- Header Section -->
@@ -2165,8 +2178,8 @@
 
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trainer Origin / Feats</label>
-                                    <input type="text" list="feats-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="feats" value="${trainer.feats || ''}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs" placeholder="Kanto, Lucky...">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trainer Origin</label>
+                                    <input type="text" list="origins-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="origin" value="${trainer.origin || ''}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs" placeholder="Kanto, Johto...">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Poké Dollars (₽)</label>
