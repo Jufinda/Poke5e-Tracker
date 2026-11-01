@@ -275,61 +275,58 @@
             }
         }
 
-        window.fetchPoke5eTrainer = async function(tIndex) {
+        // POKEMON AUTO-FILL LOGIC FROM GITHUB
+        window.autoFillPokemon = async function(tIndex, pIndex) {
             if (!isGameMaster) return;
-            const idInput = document.getElementById(`poke-id-${tIndex}`);
-            const pokeId = idInput ? idInput.value.trim().toUpperCase() : '';
-            if (!pokeId) { alert("Please enter a valid Poké5e Trainer ID!"); return; }
+            
+            // Get the species input element and its value
+            const speciesInput = document.querySelector(`input[data-tindex="${tIndex}"][data-pindex="${pIndex}"][data-field="species"]`);
+            const species = speciesInput ? speciesInput.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') : '';
+            
+            if (!species) { 
+                alert("Please type a Pokémon species name first (e.g. 'Bulbasaur')"); 
+                return; 
+            }
 
-            // Open the official trainer lookup link
-            window.open(`https://poke5e.app/trainers?id=${pokeId}`, '_blank');
-        }
-
-        // PROXY IMPORT FUNCTION
-        window.importPoke5eTrainer = async function(tIndex) {
-            if (!isGameMaster) return;
-            const idInput = document.getElementById(`poke-id-${tIndex}`);
-            const pokeId = idInput ? idInput.value.trim().toUpperCase() : '';
-            if (!pokeId) { alert("Please enter a valid Poké5e Trainer ID first!"); return; }
-
-            const btn = document.getElementById(`import-btn-${tIndex}`);
-            if(btn) btn.innerHTML = "⏳...";
+            const btn = document.getElementById(`autofill-btn-${tIndex}-${pIndex}`);
+            if(btn) btn.innerHTML = "⏳";
 
             try {
-                // Use AllOrigins as a public proxy to bypass browser CORS rules
-                const url = `https://poke5e.app/trainers?id=${pokeId}`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                // Fetch the raw JSON data directly from your forked Poké5e repository
+                const url = `https://raw.githubusercontent.com/Jufinda/poke5e/main/scripts/pokemon/${species}.json`;
+                const response = await fetch(url);
                 
-                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Pokémon data not found in repository.");
+                
                 const data = await response.json();
-                const html = data.contents;
-
-                let imported = false;
-
-                // Simple Extraction: Try to pull the Trainer name from the page title if it SSR'd successfully
-                const titleMatch = html.match(/<title>(.*?) \|/);
-                if (titleMatch && titleMatch[1] && !titleMatch[1].includes("Trainer Builder")) {
-                     appState[tIndex].name = titleMatch[1].trim();
-                     appState[tIndex].pokeId = pokeId;
-                     imported = true;
-                }
-
-                // If SvelteKit left any visible JSON state blocks, advanced extraction could go here
                 
-                if (imported) {
-                    saveData(true);
-                    render();
-                    displayCustomToast("📥", "Trainer Name Imported!");
-                } else {
-                    alert("Connected securely, but the official sheet is hidden behind client-side rendering. Use the 'View' button to see their stats!");
+                // Extract base stats (fallback to 10 if formatting is unusual)
+                const hp = data.stats?.hp || data.baseStats?.hp || 10;
+                const ac = data.ac || data.armor_class || 10;
+                
+                appState[tIndex].pokemon[pIndex].hpMax = hp;
+                appState[tIndex].pokemon[pIndex].hpCurr = hp;
+                appState[tIndex].pokemon[pIndex].ac = ac;
+
+                // Try to grab starting moves (level 0 or 1)
+                if (data.moves && Array.isArray(data.moves)) {
+                    const startingMoves = data.moves
+                        .filter(m => m.level === 1 || m.level === 0 || !m.level)
+                        .map(m => m.name);
+                    
+                    if (startingMoves.length > 0) appState[tIndex].pokemon[pIndex].moves[0].name = startingMoves[0];
+                    if (startingMoves.length > 1) appState[tIndex].pokemon[pIndex].moves[1].name = startingMoves[1];
                 }
 
+                saveData(true);
+                render();
+                displayCustomToast("⚡", `${data.name || species} Base Stats Auto-Filled!`);
             } catch (error) {
-                console.error("Import error:", error);
-                alert("Failed to connect to Poké5e. Their server may be blocking automated external requests.");
+                console.error("Auto-fill error:", error);
+                alert(`Could not find data for "${species}". Check spelling, or this Pokémon might not exist in your repo's data folder.`);
             } finally {
-                if(document.getElementById(`import-btn-${tIndex}`)) {
-                    document.getElementById(`import-btn-${tIndex}`).innerHTML = "📥 Import";
+                if(document.getElementById(`autofill-btn-${tIndex}-${pIndex}`)) {
+                    document.getElementById(`autofill-btn-${tIndex}-${pIndex}`).innerHTML = "⚡";
                 }
             }
         }
@@ -352,7 +349,7 @@
         function getNewTrainer() {
             return {
                 id: 't_' + Math.random().toString(36).substr(2, 9),
-                name: '', pokeId: '', level: 1, path: '', hpCurr: 10, hpMax: 10, ac: 10, money: 0,
+                name: '', level: 1, path: '', hpCurr: 10, hpMax: 10, ac: 10, money: 0,
                 stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
                 inventory: '',
                 pokemon: []
@@ -494,7 +491,10 @@
                         <div class="grid grid-cols-2 gap-2 mb-2 pr-6">
                             <div>
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Species / Nick</label>
-                                <input type="text" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species}" placeholder="Pikachu" class="w-full border border-gray-300 rounded p-1 text-sm">
+                                <div class="flex items-center gap-1">
+                                    <input type="text" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species}" placeholder="Pikachu" class="flex-1 border border-gray-300 rounded p-1 text-sm">
+                                    ${isGameMaster ? `<button id="autofill-btn-${tIndex}-${pIndex}" onclick="autoFillPokemon(${tIndex}, ${pIndex})" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 rounded px-2 py-1 text-xs font-bold shadow-sm transition" title="Auto-Fill Base Stats">⚡</button>` : ''}
+                                </div>
                             </div>
                             <div class="flex gap-2">
                                 <div class="w-1/2">
@@ -544,19 +544,6 @@
                     
                     <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                         <div class="lg:col-span-5 space-y-4">
-                            <!-- Poké5e ID Link Field with New Import Button -->
-                            <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-                                <label class="block text-xs font-bold text-blue-800 uppercase tracking-wide mb-1">Poké5e Trainer ID</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="poke-id-${tIndex}" value="${trainer.pokeId || ''}" placeholder="e.g. RMC0E9Z837KX" class="flex-1 border border-blue-300 rounded p-1 text-sm font-mono uppercase bg-white">
-                                    ${isGameMaster ? `
-                                    <button onclick="fetchPoke5eTrainer(${tIndex})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">🔍 View</button>
-                                    <button id="import-btn-${tIndex}" onclick="importPoke5eTrainer(${tIndex})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-bold">📥 Import</button>
-                                    ` : ''}
-                                </div>
-                                <p class="text-[10px] text-blue-600 mt-1">Paste an ID to View the official sheet or Attempt to Import.</p>
-                            </div>
-
                             <div class="flex gap-4">
                                 <div class="flex-1">
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trainer Name</label>
