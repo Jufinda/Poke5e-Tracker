@@ -135,8 +135,8 @@
 
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-6 right-6 bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-xl flex items-center space-x-2 z-50">
-        <span>💾</span>
-        <span class="font-semibold text-sm">Synced Live</span>
+        <span id="toast-icon">💾</span>
+        <span id="toast-text" class="font-semibold text-sm">Synced Live</span>
     </div>
 
     <!-- FIREBASE AND APP LOGIC -->
@@ -283,6 +283,55 @@
 
             // Open the official trainer lookup link
             window.open(`https://poke5e.app/trainers?id=${pokeId}`, '_blank');
+        }
+
+        // PROXY IMPORT FUNCTION
+        window.importPoke5eTrainer = async function(tIndex) {
+            if (!isGameMaster) return;
+            const idInput = document.getElementById(`poke-id-${tIndex}`);
+            const pokeId = idInput ? idInput.value.trim().toUpperCase() : '';
+            if (!pokeId) { alert("Please enter a valid Poké5e Trainer ID first!"); return; }
+
+            const btn = document.getElementById(`import-btn-${tIndex}`);
+            if(btn) btn.innerHTML = "⏳...";
+
+            try {
+                // Use AllOrigins as a public proxy to bypass browser CORS rules
+                const url = `https://poke5e.app/trainers?id=${pokeId}`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                const html = data.contents;
+
+                let imported = false;
+
+                // Simple Extraction: Try to pull the Trainer name from the page title if it SSR'd successfully
+                const titleMatch = html.match(/<title>(.*?) \|/);
+                if (titleMatch && titleMatch[1] && !titleMatch[1].includes("Trainer Builder")) {
+                     appState[tIndex].name = titleMatch[1].trim();
+                     appState[tIndex].pokeId = pokeId;
+                     imported = true;
+                }
+
+                // If SvelteKit left any visible JSON state blocks, advanced extraction could go here
+                
+                if (imported) {
+                    saveData(true);
+                    render();
+                    displayCustomToast("📥", "Trainer Name Imported!");
+                } else {
+                    alert("Connected securely, but the official sheet is hidden behind client-side rendering. Use the 'View' button to see their stats!");
+                }
+
+            } catch (error) {
+                console.error("Import error:", error);
+                alert("Failed to connect to Poké5e. Their server may be blocking automated external requests.");
+            } finally {
+                if(document.getElementById(`import-btn-${tIndex}`)) {
+                    document.getElementById(`import-btn-${tIndex}`).innerHTML = "📥 Import";
+                }
+            }
         }
 
         function saveData(silent = false) {
@@ -495,14 +544,17 @@
                     
                     <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                         <div class="lg:col-span-5 space-y-4">
-                            <!-- Poké5e ID Link Field -->
+                            <!-- Poké5e ID Link Field with New Import Button -->
                             <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
                                 <label class="block text-xs font-bold text-blue-800 uppercase tracking-wide mb-1">Poké5e Trainer ID</label>
                                 <div class="flex gap-2">
                                     <input type="text" id="poke-id-${tIndex}" value="${trainer.pokeId || ''}" placeholder="e.g. RMC0E9Z837KX" class="flex-1 border border-blue-300 rounded p-1 text-sm font-mono uppercase bg-white">
-                                    ${isGameMaster ? `<button onclick="fetchPoke5eTrainer(${tIndex})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">🔍 View</button>` : ''}
+                                    ${isGameMaster ? `
+                                    <button onclick="fetchPoke5eTrainer(${tIndex})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">🔍 View</button>
+                                    <button id="import-btn-${tIndex}" onclick="importPoke5eTrainer(${tIndex})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-bold">📥 Import</button>
+                                    ` : ''}
                                 </div>
-                                <p class="text-[10px] text-blue-600 mt-1">Check the official <a href="https://poke5e.app/trainers" target="_blank" class="underline font-semibold">/trainers</a> builder page.</p>
+                                <p class="text-[10px] text-blue-600 mt-1">Paste an ID to View the official sheet or Attempt to Import.</p>
                             </div>
 
                             <div class="flex gap-4">
@@ -579,9 +631,15 @@
         }
 
         function displayToast() {
+            displayCustomToast("💾", "Synced Live");
+        }
+
+        function displayCustomToast(icon, text) {
             const toast = document.getElementById('toast');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-text').innerText = text;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
+            setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
         window.confirmClear = function() { if (!isGameMaster) return; document.getElementById('modal-backdrop').classList.remove('hidden'); }
