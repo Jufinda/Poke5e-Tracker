@@ -171,6 +171,9 @@
                 <button onclick="confirmClear()" id="reset-btn" class="bg-red-800 hover:bg-red-900 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors shadow border border-red-950 flex items-center hidden">
                     Reset
                 </button>
+                <button onclick="leaveRoom()" id="leave-room-btn" class="bg-gray-800 hover:bg-gray-700 text-white px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow border border-gray-600 flex items-center gap-1 hidden" title="Return to Multiplayer Lobby">
+                    🚪 Leave Lobby
+                </button>
             </div>
         </div>
     </header>
@@ -181,32 +184,58 @@
         <h2 class="text-2xl font-bold mb-2 text-gray-900">Multiplayer Lobby</h2>
         <p class="text-xs text-gray-500 mb-6">Host as Game Master or enter a 4-letter Room Code to join your party.</p>
         <div class="space-y-4">
-            <div class="mb-2 text-left">
+            <div class="text-left">
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Your Name / Handle</label>
-                <input type="text" id="player-name" placeholder="Game Master or Trainer Name" class="w-full border-2 border-gray-300 rounded-lg p-3 font-bold text-lg focus:border-red-500 focus:outline-none">
+                <input type="text" id="player-name" placeholder="Game Master or Trainer Name" class="w-full border-2 border-gray-300 rounded-lg p-3 font-bold text-base focus:border-red-500 focus:outline-none">
+            </div>
+            <div class="text-left">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Campaign / Room Name (Optional for Host)</label>
+                <input type="text" id="room-custom-name" placeholder="e.g. Kanto Gym Challenge" class="w-full border-2 border-gray-300 rounded-lg p-2.5 font-semibold text-sm focus:border-red-500 focus:outline-none">
             </div>
             <button onclick="hostGame()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">
-                👑 Host Game (Game Master Control)
+                👑 Host New Game (Game Master Control)
             </button>
             <div class="relative flex py-2 items-center">
                 <div class="flex-grow border-t border-gray-300"></div>
                 <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-bold">OR</span>
                 <div class="flex-grow border-t border-gray-300"></div>
             </div>
-            <div class="flex space-x-2">
-                <input type="text" id="join-code" placeholder="CODE" class="flex-1 border-2 border-gray-300 rounded-lg p-3 text-center uppercase font-bold text-xl focus:border-blue-500 focus:outline-none" maxlength="4">
-                <button onclick="joinGameBtn()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow transition">
+            <div class="flex items-stretch gap-2 w-full">
+                <input type="text" id="join-code" placeholder="CODE" class="flex-1 min-w-0 border-2 border-gray-300 rounded-lg p-3 text-center uppercase font-bold text-xl focus:border-blue-500 focus:outline-none" maxlength="4">
+                <button onclick="joinGameBtn()" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg shadow transition whitespace-nowrap">
                     Join Room
                 </button>
             </div>
+
+            <!-- Dev / Test Sandbox Quick Access -->
+            <div class="pt-3 border-t border-dashed border-gray-200">
+                <button onclick="enterDevSandbox()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition text-xs flex items-center justify-center gap-1.5">
+                    🧪 Launch Dev Sandbox (Admin • Room: TEST)
+                </button>
+                <p class="text-[10px] text-gray-400 mt-1">Or type Name: <strong>Admin</strong> & Code: <strong>TEST</strong> and click Join Room.</p>
+            </div>
         </div>
         <p id="lobby-error" class="text-red-500 mt-4 text-sm font-semibold hidden"></p>
+
+        <!-- Room History Log -->
+        <div id="room-history-section" class="mt-6 pt-5 border-t border-gray-200 text-left hidden">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">🕒 Recent Rooms History</h3>
+                <button onclick="clearRoomHistory()" class="text-[10px] text-gray-400 hover:text-red-500 font-bold">Clear History</button>
+            </div>
+            <div id="room-history-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
     </div>
 
     <!-- Active Game Header & Global Battlefield Weather / Terrain Bar -->
     <div id="active-game-header" class="max-w-7xl mx-auto px-4 mb-6 hidden space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-3 bg-white border-2 border-gray-200 text-gray-800 font-bold px-5 py-2.5 rounded-2xl text-xs md:text-sm shadow-sm">
             <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5">
+                    <span>Campaign:</span>
+                    <input type="text" id="active-room-name-input" onchange="updateRoomName(this.value)" class="border border-gray-300 rounded px-2 py-0.5 font-extrabold text-gray-900 text-xs md:text-sm bg-gray-50 focus:outline-none focus:border-red-500" placeholder="Unnamed Campaign">
+                </div>
+                <span class="text-gray-300">|</span>
                 <span>Room Code: <strong id="display-room-code" class="tracking-widest text-base text-blue-600 font-mono"></strong></span>
                 <span class="text-gray-300">|</span>
                 <span>Role: <strong id="display-role" class="text-red-600"></strong></span>
@@ -354,7 +383,10 @@
 
                 <!-- Live Players -->
                 <div class="md:w-1/4 bg-gray-50 rounded-xl border border-gray-200 p-3 h-36 flex flex-col">
-                    <h3 class="text-[11px] font-bold text-gray-500 uppercase mb-1.5">Active Participants</h3>
+                    <h3 class="text-[11px] font-bold text-gray-500 uppercase mb-1.5 flex justify-between">
+                        <span>Active Participants</span>
+                        <span id="online-count-badge" class="text-[10px] text-emerald-600 font-bold"></span>
+                    </h3>
                     <ul id="live-players-list" class="flex-1 overflow-y-auto text-xs space-y-1.5 font-semibold text-gray-700"></ul>
                 </div>
             </div>
@@ -774,17 +806,37 @@
 
         loadForkedDatabase();
 
+        // Persistent Client Identity so the game always knows who you are and if you are the Host
+        let localClientId = localStorage.getItem('poke5e_client_id');
+        if (!localClientId) {
+            localClientId = 'cid_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+            localStorage.setItem('poke5e_client_id', localClientId);
+        }
+
         let appState = [];
         let diceLog = [];
         let sessionPlayers = [];
+        let roomName = "";
+        let roomHostId = null;
         let battlefieldEnv = { weather: "Clear", terrain: "Normal" };
         let autoSaveTimeout = null;
         let currentRoomCode = null;
+        let roomUnsubscribe = null;
+        let heartbeatInterval = null;
         let isSyncing = false; 
-        let localPlayerName = "Traveler"; 
+        let localPlayerName = localStorage.getItem('poke5e_player_name') || "Traveler"; 
         let isGameMaster = false;
         let currentWildEncounter = null;
         const cardDims = new Map();
+
+        // Initialize player name and room history on boot
+        setTimeout(() => {
+            const nameInput = document.getElementById('player-name');
+            if (nameInput && localPlayerName && localPlayerName !== "Traveler") {
+                nameInput.value = localPlayerName;
+            }
+            renderRoomHistory();
+        }, 50);
 
         function toggleDarkMode() {
             const isDark = document.body.classList.toggle('dark-mode');
@@ -812,6 +864,70 @@
                 }
             }
         });
+
+        // --- Room History Management ---
+        function getRoomHistory() {
+            try {
+                return JSON.parse(localStorage.getItem('poke5e_room_history') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveRoomToHistory(code, name, isHostRole) {
+            let history = getRoomHistory().filter(r => r.code !== code);
+            history.unshift({
+                code,
+                name: name || `Room ${code}`,
+                isHost: !!isHostRole,
+                lastAccessed: Date.now()
+            });
+            localStorage.setItem('poke5e_room_history', JSON.stringify(history.slice(0, 12)));
+            renderRoomHistory();
+        }
+
+        function clearRoomHistory() {
+            localStorage.removeItem('poke5e_room_history');
+            renderRoomHistory();
+        }
+
+        function renderRoomHistory() {
+            const section = document.getElementById('room-history-section');
+            const listEl = document.getElementById('room-history-list');
+            if (!section || !listEl) return;
+            const history = getRoomHistory();
+            if (history.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+            section.classList.remove('hidden');
+            listEl.innerHTML = history.map(r => {
+                const dateStr = new Date(r.lastAccessed).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return `
+                <div class="flex items-center justify-between bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 transition">
+                    <div class="min-w-0 pr-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-mono font-extrabold text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">${r.code}</span>
+                            <strong class="text-xs text-gray-800 truncate">${r.name || `Room ${r.code}`}</strong>
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${r.isHost ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'}">${r.isHost ? '👑 Host' : '🛡️ Player'}</span>
+                        </div>
+                        <span class="block text-[10px] text-gray-400 mt-0.5">Last joined: ${dateStr}</span>
+                    </div>
+                    <button onclick="rejoinFromHistory('${r.code}')" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition">
+                        Rejoin
+                    </button>
+                </div>`;
+            }).join('');
+        }
+
+        function rejoinFromHistory(code) {
+            savePlayerName();
+            if (code === 'TEST' && localPlayerName.toLowerCase() === 'admin') {
+                enterDevSandbox();
+            } else {
+                joinRoom(code);
+            }
+        }
 
         function getProficiencyBonus(level) {
             const lvl = Math.max(1, parseInt(level) || 1);
@@ -874,13 +990,13 @@
             return poke5eDB.items.find(it => (it.name || '').toLowerCase().includes(clean)) || null;
         }
 
-        // --- Dynamic Pokémon & Item Sprite Resolver ---
+        // --- Dynamic Pokémon & Item Sprite Resolver (High-Res Official Artwork that fills the square!) ---
         function getPokemonSpriteUrl(speciesQuery, isShiny = false) {
             const repo = lookupPokemon(speciesQuery);
             if (repo && repo.number) {
                 return isShiny
-                    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${repo.number}.png`
-                    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${repo.number}.png`;
+                    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${repo.number}.png`
+                    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${repo.number}.png`;
             }
             if (repo && repo.media && typeof repo.media.sprite === 'string' && repo.media.sprite.startsWith('http')) {
                 if (isShiny && repo.media.spriteShiny && repo.media.spriteShiny.startsWith('http')) return repo.media.spriteShiny;
@@ -965,18 +1081,28 @@
         async function hostGame() {
             if (!db) { displayCustomToast("⚠️", "Database not ready."); return; }
             savePlayerName();
-            isGameMaster = true;
+            const customNameInput = document.getElementById('room-custom-name');
+            const customRoomTitle = (customNameInput && customNameInput.value.trim()) ? customNameInput.value.trim() : `${localPlayerName}'s Campaign`;
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             
             try {
-                const initialLog = [`<span class="text-red-600 font-bold">👑 ${localPlayerName} started the session as Game Master!</span>`];
-                await setDoc(doc(db, "rooms", code), { 
+                const initialLog = [`<span class="text-red-600 font-bold">👑 ${localPlayerName} started "${customRoomTitle}" as Game Master!</span>`];
+                const initialParticipants = [{
+                    id: localClientId,
+                    name: localPlayerName,
+                    role: 'GM',
+                    online: true,
+                    lastSeen: Date.now()
+                }];
+                await setDoc(doc(db, "rooms", code), {
+                    roomName: customRoomTitle,
+                    hostId: localClientId,
                     trainers: [getNewTrainer()], 
                     diceLog: initialLog,
-                    players: [`👑 ${localPlayerName} (GM)`],
+                    participants: initialParticipants,
                     environment: battlefieldEnv
                 });
-                joinRoom(code, true);
+                joinRoom(code);
             } catch(e) {
                 const errorEl = document.getElementById('lobby-error');
                 errorEl.innerText = "Error: " + e.message;
@@ -984,29 +1110,171 @@
             }
         }
 
-        function joinGameBtn() {
-            savePlayerName();
-            isGameMaster = false;
-            const code = document.getElementById('join-code').value.toUpperCase();
-            if (code.length === 4) joinRoom(code, false);
+        // --- Dev / Sandbox Mode (Name: Admin + Code: TEST, or 1-Click Button) ---
+        async function enterDevSandbox() {
+            if (!db) { displayCustomToast("⚠️", "Database not ready."); return; }
+            const nameInput = document.getElementById('player-name');
+            const codeInput = document.getElementById('join-code');
+            if (nameInput) nameInput.value = 'Admin';
+            if (codeInput) codeInput.value = 'TEST';
+            localPlayerName = 'Admin';
+            localStorage.setItem('poke5e_player_name', 'Admin');
+
+            const code = 'TEST';
+            try {
+                const roomRef = doc(db, "rooms", code);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists()) {
+                    const demoTrainer = getNewTrainer();
+                    demoTrainer.name = "Admin (Sandbox)";
+                    demoTrainer.path = "Ace Trainer";
+                    demoTrainer.inventoryList = [
+                        { name: 'Poké Ball', type: 'Pokéball', qty: 10 },
+                        { name: 'Great Ball', type: 'Pokéball', qty: 5 },
+                        { name: 'Ultra Ball', type: 'Pokéball', qty: 5 },
+                        { name: 'Master Ball', type: 'Pokéball', qty: 1 },
+                        { name: 'Potion', type: 'Medicine', qty: 5 },
+                        { name: 'Super Potion', type: 'Medicine', qty: 3 }
+                    ];
+                    if (poke5eDB.loaded) {
+                        const starter = lookupPokemon('Bulbasaur');
+                        if (starter) populatePokemonFromRepo(demoTrainer.pokemon[0], starter, 5);
+                    }
+                    await setDoc(roomRef, {
+                        roomName: "🧪 Dev Sandbox Instance",
+                        hostId: localClientId,
+                        trainers: [demoTrainer],
+                        diceLog: [`<span class="text-purple-600 font-bold">🧪 Dev Sandbox (TEST) initialized by Admin!</span>`],
+                        participants: [{
+                            id: localClientId,
+                            name: 'Admin',
+                            role: 'GM',
+                            online: true,
+                            lastSeen: Date.now()
+                        }],
+                        environment: battlefieldEnv
+                    });
+                } else {
+                    // Always grant Admin full Host/GM authority in the TEST sandbox
+                    await setDoc(roomRef, { hostId: localClientId }, { merge: true });
+                }
+                await joinRoom(code);
+                displayCustomToast("🧪", "Entered Dev Sandbox (TEST)");
+            } catch (e) {
+                const errorEl = document.getElementById('lobby-error');
+                if (errorEl) {
+                    errorEl.innerText = "Sandbox Error: " + e.message;
+                    errorEl.classList.remove('hidden');
+                }
+            }
         }
 
-        async function joinRoom(code, isHosting = false) {
+        function joinGameBtn() {
+            savePlayerName();
+            const code = document.getElementById('join-code').value.trim().toUpperCase();
+            if (code === 'TEST' && localPlayerName.trim().toLowerCase() === 'admin') {
+                enterDevSandbox();
+                return;
+            }
+            if (code.length === 4) joinRoom(code);
+        }
+
+        function normalizeParticipants(rawData) {
+            let list = Array.isArray(rawData.participants) ? [...rawData.participants] : [];
+            // Migrate any legacy string players if present
+            if (list.length === 0 && Array.isArray(rawData.players)) {
+                rawData.players.forEach((pStr, idx) => {
+                    const cleanName = String(pStr).replace(/^👑\s*|^🛡️\s*|\s*\(GM\)$/g, '').trim();
+                    const isGM = String(pStr).includes('👑') || String(pStr).includes('(GM)');
+                    list.push({
+                        id: 'legacy_' + idx + '_' + cleanName,
+                        name: cleanName || 'Player',
+                        role: isGM ? 'GM' : 'Player',
+                        online: false,
+                        lastSeen: 0
+                    });
+                });
+            }
+            return list;
+        }
+
+        async function joinRoom(code) {
             if (!db) return;
             const errorEl = document.getElementById('lobby-error');
+            errorEl.classList.add('hidden');
             
             try {
                 const roomRef = doc(db, "rooms", code);
                 const roomSnap = await getDoc(roomRef);
                 
                 if (roomSnap.exists()) {
+                    const data = roomSnap.data();
                     currentRoomCode = code;
+                    roomName = data.roomName || `Room ${code}`;
+                    roomHostId = data.hostId || null;
+
+                    // Determine if this client is the Host (GM)
+                    let participants = normalizeParticipants(data);
+                    if (!roomHostId) {
+                        // Legacy room without hostId: check if a GM participant matches our name or claim if none
+                        const gmEntry = participants.find(p => p.role === 'GM');
+                        if (!gmEntry || gmEntry.name.toLowerCase() === localPlayerName.toLowerCase()) {
+                            roomHostId = localClientId;
+                        }
+                    }
+                    isGameMaster = (roomHostId === localClientId);
+
+                    // Update or insert our participant record without duplicating
+                    let myEntry = participants.find(p => p.id === localClientId);
+                    if (!myEntry) {
+                        // Also deduplicate if an entry with the same name & role has a legacy id
+                        myEntry = participants.find(p => p.name.toLowerCase() === localPlayerName.toLowerCase() && ((isGameMaster && p.role === 'GM') || (!isGameMaster && p.role !== 'GM')));
+                    }
+
+                    const isRejoin = !!myEntry;
+                    if (myEntry) {
+                        myEntry.id = localClientId;
+                        myEntry.name = localPlayerName;
+                        myEntry.role = isGameMaster ? 'GM' : 'Player';
+                        myEntry.online = true;
+                        myEntry.lastSeen = Date.now();
+                    } else {
+                        participants.push({
+                            id: localClientId,
+                            name: localPlayerName,
+                            role: isGameMaster ? 'GM' : 'Player',
+                            online: true,
+                            lastSeen: Date.now()
+                        });
+                    }
+
+                    // Remove any accidental duplicate entries for the same clientId
+                    const seenIds = new Set();
+                    participants = participants.filter(p => {
+                        if (seenIds.has(p.id)) return false;
+                        seenIds.add(p.id);
+                        return true;
+                    });
+
+                    sessionPlayers = participants;
+                    appState = data.trainers || [];
+                    diceLog = data.diceLog || [];
+                    battlefieldEnv = data.environment || { weather: "Clear", terrain: "Normal" };
+
+                    // Configure UI for Host vs Player
                     document.getElementById('lobby-screen').classList.add('hidden');
                     document.getElementById('active-game-header').classList.remove('hidden');
                     document.getElementById('main-content').classList.remove('hidden');
+                    document.getElementById('leave-room-btn').classList.remove('hidden');
                     document.getElementById('display-room-code').innerText = code;
-                    document.getElementById('display-role').innerText = isGameMaster ? "Game Master (Full Control)" : "Player (Live Roller)";
+                    document.getElementById('display-role').innerText = isGameMaster ? "👑 Game Master (Host)" : "🛡️ Player (Live Roller)";
                     
+                    const roomNameInput = document.getElementById('active-room-name-input');
+                    if (roomNameInput) {
+                        roomNameInput.value = roomName;
+                        roomNameInput.disabled = !isGameMaster;
+                    }
+
                     if (isGameMaster) {
                         document.getElementById('add-trainer-btn').classList.remove('hidden');
                         document.getElementById('reset-btn').classList.remove('hidden');
@@ -1014,31 +1282,46 @@
                         document.getElementById('import-label').classList.remove('hidden');
                         document.getElementById('encounter-toggle-btn').classList.remove('hidden');
                         document.getElementById('party-rest-btn').classList.remove('hidden');
+                        document.getElementById('global-weather-select').disabled = false;
+                        document.getElementById('global-terrain-select').disabled = false;
                     } else {
+                        document.getElementById('add-trainer-btn').classList.add('hidden');
+                        document.getElementById('reset-btn').classList.add('hidden');
+                        document.getElementById('export-btn').classList.add('hidden');
+                        document.getElementById('import-label').classList.add('hidden');
+                        document.getElementById('encounter-toggle-btn').classList.add('hidden');
+                        document.getElementById('party-rest-btn').classList.add('hidden');
                         document.getElementById('global-weather-select').disabled = true;
                         document.getElementById('global-terrain-select').disabled = true;
                     }
 
-                    appState = roomSnap.data().trainers || [];
-                    diceLog = roomSnap.data().diceLog || [];
-                    sessionPlayers = roomSnap.data().players || [];
-                    battlefieldEnv = roomSnap.data().environment || { weather: "Clear", terrain: "Normal" };
-                    
-                    const playerTag = isGameMaster ? `👑 ${localPlayerName} (GM)` : `🛡️ ${localPlayerName}`;
-                    if (!sessionPlayers.includes(playerTag)) {
-                        sessionPlayers.push(playerTag);
-                        diceLog.push(`<span class="text-blue-600 font-bold">👋 ${localPlayerName} joined the room!</span>`);
-                        if(diceLog.length > 40) diceLog.shift();
-                        pushLogAndPlayers();
-                    }
-                    
-                    onSnapshot(roomRef, (snapshot) => {
+                    saveRoomToHistory(code, roomName, isGameMaster);
+
+                    diceLog.push(`<span class="text-blue-600 font-bold">👋 ${localPlayerName} ${isRejoin ? 'reconnected to' : 'joined'} the room (${isGameMaster ? 'Host' : 'Player'})!</span>`);
+                    if (diceLog.length > 40) diceLog.shift();
+
+                    await setDoc(roomRef, {
+                        roomName,
+                        hostId: roomHostId,
+                        participants: sessionPlayers,
+                        diceLog
+                    }, { merge: true });
+
+                    if (roomUnsubscribe) roomUnsubscribe();
+                    roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
                         if (snapshot.exists()) {
                             isSyncing = true;
-                            appState = snapshot.data().trainers || [];
-                            diceLog = snapshot.data().diceLog || [];
-                            sessionPlayers = snapshot.data().players || [];
-                            battlefieldEnv = snapshot.data().environment || { weather: "Clear", terrain: "Normal" };
+                            const sData = snapshot.data();
+                            appState = sData.trainers || [];
+                            diceLog = sData.diceLog || [];
+                            sessionPlayers = normalizeParticipants(sData);
+                            roomName = sData.roomName || `Room ${code}`;
+                            battlefieldEnv = sData.environment || { weather: "Clear", terrain: "Normal" };
+                            
+                            const rnInput = document.getElementById('active-room-name-input');
+                            if (rnInput && document.activeElement !== rnInput) rnInput.value = roomName;
+                            saveRoomToHistory(code, roomName, isGameMaster);
+
                             renderEnvironmentBanner();
                             render();
                             renderDiceLog();
@@ -1046,26 +1329,100 @@
                             setTimeout(() => isSyncing = false, 100);
                         }
                     });
+
+                    // Start live presence heartbeat every 20 seconds
+                    if (heartbeatInterval) clearInterval(heartbeatInterval);
+                    heartbeatInterval = setInterval(() => sendPresenceHeartbeat(true), 20000);
                     
                     setupEventListeners();
                 } else {
-                    errorEl.innerText = "Room not found!";
+                    errorEl.innerText = "Room not found! Check the 4-letter code.";
                     errorEl.classList.remove('hidden');
                 }
             } catch(e) {
-                errorEl.innerText = "Database connection error.";
+                errorEl.innerText = "Database connection error: " + e.message;
                 errorEl.classList.remove('hidden');
             }
+        }
+
+        async function sendPresenceHeartbeat(isOnline = true) {
+            if (!currentRoomCode || !db) return;
+            const me = sessionPlayers.find(p => p.id === localClientId);
+            if (me) {
+                me.online = isOnline;
+                me.lastSeen = Date.now();
+                me.name = localPlayerName;
+            }
+            try {
+                await setDoc(doc(db, "rooms", currentRoomCode), {
+                    participants: sessionPlayers
+                }, { merge: true });
+            } catch (e) {}
+        }
+
+        async function leaveRoom() {
+            if (!currentRoomCode) return;
+            if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+            if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+
+            const me = sessionPlayers.find(p => p.id === localClientId);
+            if (me) {
+                me.online = false;
+                me.lastSeen = Date.now();
+            }
+            diceLog.push(`<span class="text-gray-500 font-bold">🚪 ${localPlayerName} left the room (Offline).</span>`);
+            if (diceLog.length > 40) diceLog.shift();
+
+            try {
+                await setDoc(doc(db, "rooms", currentRoomCode), {
+                    participants: sessionPlayers,
+                    diceLog
+                }, { merge: true });
+            } catch (e) {}
+
+            currentRoomCode = null;
+            document.getElementById('active-game-header').classList.add('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('leave-room-btn').classList.add('hidden');
+            document.getElementById('add-trainer-btn').classList.add('hidden');
+            document.getElementById('reset-btn').classList.add('hidden');
+            document.getElementById('export-btn').classList.add('hidden');
+            document.getElementById('import-label').classList.add('hidden');
+            document.getElementById('encounter-toggle-btn').classList.add('hidden');
+            document.getElementById('party-rest-btn').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            renderRoomHistory();
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (currentRoomCode && db) {
+                const me = sessionPlayers.find(p => p.id === localClientId);
+                if (me) {
+                    me.online = false;
+                    me.lastSeen = Date.now();
+                }
+                setDoc(doc(db, "rooms", currentRoomCode), { participants: sessionPlayers }, { merge: true });
+            }
+        });
+
+        function updateRoomName(newVal) {
+            if (!isGameMaster || !currentRoomCode) return;
+            roomName = (newVal || '').trim() || `Room ${currentRoomCode}`;
+            saveRoomToHistory(currentRoomCode, roomName, isGameMaster);
+            saveData(true);
+            displayCustomToast("✏️", `Campaign renamed to "${roomName}"`);
         }
 
         function saveData(silent = false) {
             if (!currentRoomCode || isSyncing || !isGameMaster) return;
             setDoc(doc(db, "rooms", currentRoomCode), { 
+                roomName: roomName || `Room ${currentRoomCode}`,
+                hostId: roomHostId || localClientId,
                 trainers: appState, 
                 diceLog: diceLog,
-                players: sessionPlayers,
+                participants: sessionPlayers,
                 environment: battlefieldEnv
-            });
+            }, { merge: true });
             if (!silent) displayToast();
         }
 
@@ -1074,7 +1431,7 @@
             setDoc(doc(db, "rooms", currentRoomCode), { 
                 trainers: appState, 
                 diceLog: diceLog, 
-                players: sessionPlayers,
+                participants: sessionPlayers,
                 environment: battlefieldEnv
             }, { merge: true });
         }
@@ -1297,7 +1654,6 @@
             }
 
             const lower = item.name.toLowerCase();
-            // Check if it's a healing potion/medicine
             const isMedicine = (item.type || '').toLowerCase().includes('medicine') || lower.includes('potion') || lower.includes('restore') || lower.includes('berry') || lower.includes('revive') || lower.includes('heal');
 
             if (isMedicine) {
@@ -1541,9 +1897,9 @@
                           : '';
                 const desc = Array.isArray(item.description) ? item.description.join(' ') : (item.description || '');
                 const thumbHtml = cat === 'pokemon'
-                    ? `<img src="${getPokemonSpriteUrl(item.name)}" alt="${item.name}" class="w-16 h-16 object-contain bg-gray-100 rounded-xl border border-gray-200 shrink-0 p-1" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">`
+                    ? `<img src="${getPokemonSpriteUrl(item.name)}" alt="${item.name}" class="w-16 h-16 object-contain bg-gray-100 rounded-xl border border-gray-200 shrink-0 p-0.5" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">`
                     : cat === 'items'
-                    ? `<img src="${getItemSpriteUrl(item.name, item.type)}" alt="${item.name}" class="w-12 h-12 object-contain bg-gray-100 p-1.5 rounded-xl border border-gray-200 shrink-0" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">`
+                    ? `<img src="${getItemSpriteUrl(item.name, item.type)}" alt="${item.name}" class="w-12 h-12 object-contain bg-gray-100 p-1 rounded-xl border border-gray-200 shrink-0" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">`
                     : '';
                 return `
                 <div class="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between gap-4">
@@ -1637,8 +1993,8 @@
 
             box.innerHTML = `
                 <div class="flex items-center gap-4 flex-1 w-full">
-                    <div class="w-28 h-28 rounded-2xl bg-slate-900/90 border border-slate-600 flex items-center justify-center shrink-0 shadow-inner relative">
-                        <img src="${wildSpriteUrl}" alt="${w.species}" class="w-24 h-24 object-contain drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                    <div class="w-28 h-28 rounded-2xl bg-slate-900/90 border border-slate-600 flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden p-1">
+                        <img src="${wildSpriteUrl}" alt="${w.species}" class="w-full h-full object-contain scale-110 drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                         ${w.shiny ? `<span class="absolute top-1 right-1 text-xs">✨</span>` : ''}
                     </div>
                     <div class="flex-1 space-y-2 min-w-0">
@@ -1855,8 +2211,32 @@
 
         function renderPlayers() {
             const listEl = document.getElementById('live-players-list');
+            const countBadge = document.getElementById('online-count-badge');
             if (!listEl) return;
-            listEl.innerHTML = sessionPlayers.map(p => `<li class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span>${p}</li>`).join('');
+            const now = Date.now();
+            // A participant is considered actively online if online===true and lastSeen within 65 seconds (or is the current user)
+            const sorted = [...sessionPlayers].sort((a, b) => {
+                const aOn = (a.id === localClientId) || (a.online && (now - (a.lastSeen || 0) < 65000));
+                const bOn = (b.id === localClientId) || (b.online && (now - (b.lastSeen || 0) < 65000));
+                return (bOn ? 1 : 0) - (aOn ? 1 : 0);
+            });
+
+            let onlineCount = 0;
+            listEl.innerHTML = sorted.map(p => {
+                const isMe = p.id === localClientId;
+                const isOnline = isMe || (p.online && (now - (p.lastSeen || 0) < 65000));
+                if (isOnline) onlineCount++;
+                const isGM = p.role === 'GM';
+                return `
+                <li class="flex items-center justify-between gap-2 py-0.5 ${isOnline ? 'text-gray-800' : 'text-gray-400 opacity-70'}">
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="h-2.5 w-2.5 rounded-full shrink-0 ${isOnline ? 'bg-green-500 shadow-sm' : 'bg-gray-400'}"></span>
+                        <span class="truncate">${isGM ? '👑' : '🛡️'} ${p.name} ${isGM ? '(GM)' : ''} ${isMe ? '<span class="text-[10px] text-blue-600 font-extrabold">(You)</span>' : ''}</span>
+                    </div>
+                    <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${isOnline ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-200 text-gray-500'}">${isOnline ? 'Online' : 'Offline'}</span>
+                </li>`;
+            }).join('');
+            if (countBadge) countBadge.innerText = `${onlineCount} Online`;
         }
 
         function setupEventListeners() {
@@ -1916,17 +2296,21 @@
                 const inventoryHtml = trainer.inventoryList.map((item, iIndex) => {
                     const iconUrl = getItemSpriteUrl(item.name, item.type);
                     return `
-                    <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-gray-200 text-xs shadow-sm">
-                        <div class="flex items-center gap-2.5 truncate pr-2 min-w-0">
+                    <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 text-xs shadow-sm">
+                        <div class="flex items-center gap-2.5 flex-1 min-w-0">
                             <img src="${iconUrl}" alt="${item.name}" class="w-9 h-9 object-contain shrink-0 bg-gray-50 rounded-lg border border-gray-100 p-1" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
-                            <span class="font-bold text-gray-800 text-sm truncate">${item.name}</span>
-                            <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded uppercase font-semibold shrink-0">${item.type || 'Item'}</span>
-                            <button onclick="inspectItemText('${(item.name || '').replace(/'/g, "\\'")}')" class="text-xs text-blue-600 hover:text-blue-800 font-bold px-1 shrink-0" title="Inspect Item Details">ℹ️</button>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <span class="font-extrabold text-gray-900 text-sm leading-tight break-words">${item.name}</span>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <span class="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded uppercase font-bold">${item.type || 'Item'}</span>
+                                    <button onclick="inspectItemText('${(item.name || '').replace(/'/g, "\\'")}')" class="text-xs text-blue-600 hover:text-blue-800 font-bold" title="Inspect Item Details">ℹ️</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${isGameMaster ? `<button onclick="useInventoryItem(${tIndex}, ${iIndex})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-bold text-xs" title="Use 1x Item">Use</button>` : ''}
                             ${isGameMaster ? `<button onclick="adjustInventoryQty(${tIndex}, ${iIndex}, -1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded-md font-bold text-gray-700">-</button>` : ''}
-                            <span class="font-extrabold w-7 text-center text-gray-900 text-sm">${item.qty}</span>
+                            <span class="font-extrabold w-6 text-center text-gray-900 text-sm">${item.qty}</span>
                             ${isGameMaster ? `<button onclick="adjustInventoryQty(${tIndex}, ${iIndex}, 1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded-md font-bold text-gray-700">+</button>` : ''}
                         </div>
                     </div>`;
@@ -1967,8 +2351,8 @@
                     <div data-pokeid="${poke.id}" ${inlineSizeStyle} class="pokemon-card rounded-2xl border border-gray-200 p-4 relative shadow-sm ${poke.shiny ? 'shiny-card' : 'bg-gray-50'}">
                         ${isGameMaster ? `<button onclick="removePokemon(${tIndex}, ${pIndex})" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-sm font-bold">✖</button>` : ''}
                         <div class="flex items-center gap-3.5 mb-3 pr-6">
-                            <div class="w-22 h-22 rounded-2xl bg-white border-2 border-gray-200 flex items-center justify-center shrink-0 shadow-md overflow-hidden p-1">
-                                <img src="${spriteUrl}" alt="${poke.species || 'Pokémon'}" class="w-20 h-20 object-contain drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                            <div class="w-24 h-24 rounded-2xl bg-white border-2 border-gray-200 flex items-center justify-center shrink-0 shadow-md overflow-hidden p-1">
+                                <img src="${spriteUrl}" alt="${poke.species || 'Pokémon'}" class="w-full h-full object-contain scale-110 drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                             </div>
                             <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                                 ${typeBadges || `<span class="text-xs text-gray-400 italic">Select species</span>`}
@@ -2165,12 +2549,12 @@
                                 </div>
                                 ${isGameMaster ? `
                                 <div class="flex gap-1">
-                                    <input type="text" id="inv-add-input-${tIndex}" list="items-datalist" placeholder="Search Poké Ball, Great Ball, Potion..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+                                    <input type="text" id="inv-add-input-${tIndex}" list="items-datalist" placeholder="Search Poké Ball, Great Ball, Potion..." class="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1 text-xs">
                                     <input type="number" id="inv-add-qty-${tIndex}" value="1" min="1" max="99" class="w-12 border border-gray-300 rounded text-center text-xs font-bold" title="Quantity">
-                                    <button onclick="addItemToInventory(${tIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-xs">+ Add</button>
-                                    <button onclick="inspectPendingItem(${tIndex})" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold px-2 py-1 rounded text-xs" title="Inspect Selected Item">ℹ️</button>
+                                    <button onclick="addItemToInventory(${tIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-xs shrink-0">+ Add</button>
+                                    <button onclick="inspectPendingItem(${tIndex})" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold px-2 py-1 rounded text-xs shrink-0" title="Inspect Selected Item">ℹ️</button>
                                 </div>` : ''}
-                                <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                                     ${inventoryHtml || '<div class="text-xs text-gray-400 italic text-center py-2">No items in inventory.</div>'}
                                 </div>
                             </div>
@@ -2209,7 +2593,12 @@
         // Explicitly attach all functions to window for inline onclick handlers
         window.toggleDarkMode = toggleDarkMode;
         window.hostGame = hostGame;
+        window.enterDevSandbox = enterDevSandbox;
         window.joinGameBtn = joinGameBtn;
+        window.rejoinFromHistory = rejoinFromHistory;
+        window.clearRoomHistory = clearRoomHistory;
+        window.leaveRoom = leaveRoom;
+        window.updateRoomName = updateRoomName;
         window.openGuideModal = openGuideModal;
         window.closeGuideModal = closeGuideModal;
         window.openRulesCheatModal = openRulesCheatModal;
