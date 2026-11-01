@@ -17,10 +17,33 @@
         #toast { visibility: hidden; opacity: 0; transition: opacity 0.3s, visibility 0.3s; }
         #toast.show { visibility: visible; opacity: 1; }
         .shiny-card { background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fef08a 100%); border-color: #eab308 !important; }
-        .pokemon-card { resize: both; overflow: auto; min-width: 280px; min-height: 420px; }
+        .pokemon-card { resize: both; overflow: auto; min-width: 260px; min-height: 380px; max-width: 100%; }
+
+        /* Full Dark Mode Theme Overrides */
+        body.dark-mode { background-color: #0f172a; color: #f1f5f9; }
+        body.dark-mode .bg-white { background-color: #1e293b !important; color: #f1f5f9; }
+        body.dark-mode .bg-white\/90 { background-color: rgba(15, 23, 42, 0.85) !important; color: #e2e8f0; }
+        body.dark-mode .bg-gray-50 { background-color: #0f172a !important; color: #e2e8f0; }
+        body.dark-mode .bg-gray-100 { background-color: #111827 !important; color: #e2e8f0; }
+        body.dark-mode .bg-gray-200 { background-color: #334155 !important; color: #f1f5f9; }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800 { color: #f8fafc !important; }
+        body.dark-mode .text-gray-700, body.dark-mode .text-gray-600 { color: #cbd5e1 !important; }
+        body.dark-mode .text-gray-500, body.dark-mode .text-gray-400 { color: #94a3b8 !important; }
+        body.dark-mode .border-gray-200, body.dark-mode .border-gray-300, body.dark-mode .border-gray-100 { border-color: #334155 !important; }
+        body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            border-color: #475569 !important;
+        }
+        body.dark-mode .shiny-card {
+            background: linear-gradient(135deg, #422006 0%, #713f12 50%, #854d0e 100%) !important;
+            border-color: #eab308 !important;
+        }
+        body.dark-mode ::-webkit-scrollbar-track { background: #1e293b; }
+        body.dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
     </style>
 </head>
-<body class="text-gray-800 pb-24">
+<body class="text-gray-800 pb-24 transition-colors duration-200">
 
     <!-- Native Autocomplete Datalists populated from Jufinda/poke5e -->
     <datalist id="pokemon-datalist"></datalist>
@@ -110,6 +133,9 @@
             </p>
             
             <div class="flex flex-wrap justify-center gap-2 mt-4">
+                <button onclick="toggleDarkMode()" id="dark-mode-btn" class="bg-slate-900 hover:bg-slate-800 text-yellow-300 px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow border border-slate-700 flex items-center gap-1">
+                    🌙 Dark Mode
+                </button>
                 <button onclick="openGuideModal()" class="bg-sky-400 hover:bg-sky-300 text-gray-900 px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow flex items-center gap-1">
                     📘 How to Play Guide
                 </button>
@@ -356,7 +382,7 @@
                         <li><strong>Set Trainer Ability Scores:</strong> Allocate your Trainer's 6 core stats (STR, DEX, CON, INT, WIS, CHA). Standard array is <code class="bg-gray-100 px-1 rounded font-bold">15, 14, 13, 12, 10, 8</code>. Your Level 1 Trainer starts with <code class="bg-gray-100 px-1 rounded font-bold">10 + CON Modifier</code> HP and <code class="bg-gray-100 px-1 rounded font-bold">10 + DEX Modifier</code> AC.</li>
                         <li><strong>Choose a Trainer Path & Specialization:</strong> At Level 1, pick a <strong>Type Specialization</strong> (+1 to skill checks/saves with Pokémon of that type) and at Level 2+ pick your <strong>Trainer Path</strong> (<em>Ace Trainer, Pokémon Collector, Nurse, Pokéchef, Researcher, Tactician, Commander, or Ranger</em>).</li>
                         <li><strong>Pick Your Starter Pokémon:</strong> Under Pokémon Party, type a starter species with <strong>SR ≤ 1/2</strong> (e.g., <em>Bulbasaur, Charmander, Squirtle, Pikachu, Eevee</em>) and click the yellow <strong>⚡</strong> button. It will automatically pull official stats, HP, AC, Ability, and starting moves!</li>
-                        <li><strong>Starting Inventory:</strong> Trainers begin with <strong>5x Poké Balls</strong>, <strong>3x Potions</strong>, and <strong>₽1,000</strong>.</li>
+                        <li><strong>Official Starting Equipment (Core Rules):</strong> By Poké5e rules, Level 1 Trainers begin with <strong>5x Poké Balls</strong>, <strong>1x Potion</strong>, a Pokédex, and <strong>₽1,000</strong>.</li>
                     </ol>
                 </div>
 
@@ -758,6 +784,34 @@
         let localPlayerName = "Traveler"; 
         let isGameMaster = false;
         let currentWildEncounter = null;
+        const cardDims = new Map();
+
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('poke5e_dark_mode', isDark ? '1' : '0');
+            const btn = document.getElementById('dark-mode-btn');
+            if (btn) btn.innerHTML = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+
+        if (localStorage.getItem('poke5e_dark_mode') === '1') {
+            document.body.classList.add('dark-mode');
+            setTimeout(() => {
+                const btn = document.getElementById('dark-mode-btn');
+                if (btn) btn.innerHTML = '☀️ Light Mode';
+            }, 50);
+        }
+
+        const cardResizeObserver = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                const pid = entry.target.dataset.pokeid;
+                if (pid && entry.target.style.width) {
+                    cardDims.set(pid, {
+                        width: entry.target.style.width,
+                        height: entry.target.style.height
+                    });
+                }
+            }
+        });
 
         function getProficiencyBonus(level) {
             const lvl = Math.max(1, parseInt(level) || 1);
@@ -818,6 +872,47 @@
             const clean = query.trim().toLowerCase();
             if (poke5eDB.itemsByName.has(clean)) return poke5eDB.itemsByName.get(clean);
             return poke5eDB.items.find(it => (it.name || '').toLowerCase().includes(clean)) || null;
+        }
+
+        // --- Dynamic Pokémon & Item Sprite Resolver ---
+        function getPokemonSpriteUrl(speciesQuery, isShiny = false) {
+            const repo = lookupPokemon(speciesQuery);
+            if (repo && repo.number) {
+                return isShiny
+                    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${repo.number}.png`
+                    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${repo.number}.png`;
+            }
+            if (repo && repo.media && typeof repo.media.sprite === 'string' && repo.media.sprite.startsWith('http')) {
+                if (isShiny && repo.media.spriteShiny && repo.media.spriteShiny.startsWith('http')) return repo.media.spriteShiny;
+                return repo.media.sprite;
+            }
+            const cleanName = (speciesQuery || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (cleanName) {
+                return isShiny
+                    ? `https://play.pokemonshowdown.com/sprites/ani-shiny/${cleanName}.gif`
+                    : `https://play.pokemonshowdown.com/sprites/ani/${cleanName}.gif`;
+            }
+            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png`;
+        }
+
+        function getItemSpriteUrl(itemName, itemType = '') {
+            const meta = lookupItem(itemName);
+            if (meta && meta.media && typeof meta.media.sprite === 'string' && meta.media.sprite.startsWith('http')) {
+                return meta.media.sprite;
+            }
+
+            const raw = (itemName || '').trim().toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+
+            if (raw.startsWith('tm')) return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tm-normal.png`;
+            if (raw.includes('berry')) return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${raw}.png`;
+            if (raw.includes('potion') && !['potion','super-potion','hyper-potion','max-potion','full-restore'].includes(raw)) {
+                return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png`;
+            }
+            if (!raw) return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png`;
+            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${raw}.png`;
         }
 
         function getAvailablePokeballs() {
@@ -1445,14 +1540,22 @@
                           : cat === 'items' ? `${item.type || 'Item'} ${item.cost ? `• ₽${item.cost}` : ''}`
                           : '';
                 const desc = Array.isArray(item.description) ? item.description.join(' ') : (item.description || '');
+                const thumbHtml = cat === 'pokemon'
+                    ? `<img src="${getPokemonSpriteUrl(item.name)}" alt="${item.name}" class="w-16 h-16 object-contain bg-gray-100 rounded-xl border border-gray-200 shrink-0 p-1" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">`
+                    : cat === 'items'
+                    ? `<img src="${getItemSpriteUrl(item.name, item.type)}" alt="${item.name}" class="w-12 h-12 object-contain bg-gray-100 p-1.5 rounded-xl border border-gray-200 shrink-0" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">`
+                    : '';
                 return `
-                <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between gap-4">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <strong class="text-sm text-gray-900">${item.name || item.id}</strong>
-                            <span class="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${sub}</span>
+                <div class="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        ${thumbHtml}
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <strong class="text-sm text-gray-900">${item.name || item.id}</strong>
+                                <span class="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${sub}</span>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1">${desc}</p>
                         </div>
-                        <p class="text-xs text-gray-600 mt-1">${desc}</p>
                     </div>
                 </div>`;
             }).join('') || `<div class="text-center py-8 text-gray-400 italic">No matches found.</div>`;
@@ -1523,46 +1626,55 @@
             const catchDC = calculateCatchDC(w);
 
             const trainerOptions = appState.map((t, idx) => `<option value="${idx}" ${(w.selectedTrainerIdx || 0) === idx ? 'selected' : ''}>${t.name || `Trainer #${idx+1}`}</option>`).join('');
-            const badges = (w.types || []).map(t => `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${TYPE_COLORS[t] || 'bg-gray-600'}">${t}</span>`).join(' ');
+            const badges = (w.types || []).map(t => `<span class="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${TYPE_COLORS[t] || 'bg-gray-600'}">${t}</span>`).join(' ');
             const allBalls = getAvailablePokeballs();
             const ballOptionsHtml = allBalls.map(b => {
                 const isSelected = (w.ballName || 'Poké Ball').toLowerCase() === b.name.toLowerCase();
                 return `<option value="${b.name}|${b.bonus}" ${isSelected ? 'selected' : ''}>${b.name} (${b.bonus >= 99 ? 'Auto' : `+${b.bonus}`})</option>`;
             }).join('');
+            const wildSpriteUrl = getPokemonSpriteUrl(w.species, w.shiny);
+            const selectedBallIcon = getItemSpriteUrl(w.ballName || 'Poké Ball');
 
             box.innerHTML = `
-                <div class="flex-1 space-y-2 w-full">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-base font-extrabold text-yellow-300">${w.shiny ? '✨ ' : ''}Lv.${w.level} ${w.species}</span>
-                        ${badges}
-                        <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-200">SR ${w.sr} • ${NATURES_DATA[w.nature]?.label || w.nature}</span>
-                        <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-200">AC ${w.ac}</span>
-                        <button onclick="updateWildState('shiny')" class="text-[10px] px-2 py-0.5 rounded font-bold ${w.shiny ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 text-slate-300'}">✨ Shiny</button>
+                <div class="flex items-center gap-4 flex-1 w-full">
+                    <div class="w-28 h-28 rounded-2xl bg-slate-900/90 border border-slate-600 flex items-center justify-center shrink-0 shadow-inner relative">
+                        <img src="${wildSpriteUrl}" alt="${w.species}" class="w-24 h-24 object-contain drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                        ${w.shiny ? `<span class="absolute top-1 right-1 text-xs">✨</span>` : ''}
                     </div>
-                    <div class="text-xs text-slate-300 flex flex-wrap gap-3 items-center">
-                        <div class="flex items-center gap-1">
-                            <span>Wild HP:</span>
-                            <input type="number" value="${w.hpCurr}" onchange="updateWildState('hpCurr', this.value)" class="w-14 bg-slate-900 border border-slate-600 rounded px-1.5 py-0.5 text-center font-bold text-white">
-                            <span>/ ${w.hpMax}</span>
+                    <div class="flex-1 space-y-2 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-base font-extrabold text-yellow-300">${w.shiny ? '✨ ' : ''}Lv.${w.level} ${w.species}</span>
+                            ${badges}
+                            <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-200">SR ${w.sr} • ${NATURES_DATA[w.nature]?.label || w.nature}</span>
+                            <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-200">AC ${w.ac}</span>
+                            <button onclick="updateWildState('shiny')" class="text-[10px] px-2 py-0.5 rounded font-bold ${w.shiny ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 text-slate-300'}">✨ Shiny</button>
                         </div>
-                        <div class="flex items-center gap-1">
-                            <span>Status:</span>
-                            <select onchange="updateWildState('status', this.value)" class="bg-slate-900 border border-slate-600 rounded px-1.5 py-0.5 text-xs text-white">
-                                ${statusConditions.map(s => `<option value="${s}" ${w.status === s ? 'selected' : ''}>${s}</option>`).join('')}
-                            </select>
+                        <div class="text-xs text-slate-300 flex flex-wrap gap-3 items-center">
+                            <div class="flex items-center gap-1">
+                                <span>Wild HP:</span>
+                                <input type="number" value="${w.hpCurr}" onchange="updateWildState('hpCurr', this.value)" class="w-14 bg-slate-900 border border-slate-600 rounded px-1.5 py-0.5 text-center font-bold text-white">
+                                <span>/ ${w.hpMax}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span>Status:</span>
+                                <select onchange="updateWildState('status', this.value)" class="bg-slate-900 border border-slate-600 rounded px-1.5 py-0.5 text-xs text-white">
+                                    ${statusConditions.map(s => `<option value="${s}" ${w.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <img src="${selectedBallIcon}" class="w-6 h-6 object-contain" onerror="this.style.display='none'">
+                                <span>Ball:</span>
+                                <select id="wild-ball-select" onchange="updateWildState('ballSelect', this.value)" class="bg-slate-900 border border-slate-600 rounded px-1.5 py-0.5 text-xs text-white font-semibold">
+                                    ${ballOptionsHtml}
+                                </select>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-1">
-                            <span>Ball:</span>
-                            <select id="wild-ball-select" onchange="updateWildState('ballSelect', this.value)" class="bg-slate-900 border border-slate-600 rounded px-1.5 py-0.5 text-xs text-white font-semibold">
-                                ${ballOptionsHtml}
-                            </select>
+                        <div class="text-[11px] text-indigo-200">
+                            <strong>Moves:</strong> ${w.moves.filter(m => m.name).map(m => m.name).join(', ') || 'Tackle'}
                         </div>
-                    </div>
-                    <div class="text-[11px] text-indigo-200">
-                        <strong>Moves:</strong> ${w.moves.filter(m => m.name).map(m => m.name).join(', ') || 'Tackle'}
                     </div>
                 </div>
-                <div class="flex sm:flex-col items-center justify-between gap-2 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-700 w-full sm:w-auto">
+                <div class="flex sm:flex-col items-center justify-between gap-2 bg-slate-900/90 px-4 py-3 rounded-xl border border-slate-700 w-full sm:w-auto">
                     <div class="text-center">
                         <span class="block text-[10px] uppercase font-bold text-slate-400">Capture DC (${w.ballName})</span>
                         <span class="text-2xl font-extrabold text-emerald-400">${catchDC}</span>
@@ -1572,7 +1684,7 @@
                         <select id="capture-target-trainer" onchange="updateWildState('trainer', this.value)" class="bg-slate-800 border border-slate-600 rounded p-1 text-[11px] text-white">
                             ${trainerOptions}
                         </select>
-                        <button onclick="sendWildToTrainer()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1 rounded text-xs shadow" title="Check Inventory & Catch">
+                        <button onclick="sendWildToTrainer()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow" title="Check Inventory & Catch">
                             + Catch
                         </button>
                     </div>` : ''}
@@ -1641,12 +1753,21 @@
                 name: '', level: 1, path: '', specialization: 'None', origin: '',
                 hpCurr: 12, hpMax: 12, ac: 12, money: 1000,
                 stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+                // Official Poké5e Core Rulebook Starting Equipment: 5x Poké Balls & 1x Potion
                 inventoryList: [
                     { name: 'Poké Ball', type: 'Pokéball', qty: 5 },
-                    { name: 'Potion', type: 'Medicine', qty: 3 }
+                    { name: 'Potion', type: 'Medicine', qty: 1 }
                 ],
                 pokemon: [getNewPokemon()]
             };
+        }
+
+        function clearTrainerInventory(tIndex) {
+            if (!isGameMaster) return;
+            appState[tIndex].inventoryList = [];
+            saveData(true);
+            render();
+            displayCustomToast("🧹", "Inventory cleared!");
         }
 
         function getNewPokemon() {
@@ -1792,21 +1913,24 @@
                 if (!trainer.stats) trainer.stats = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
 
                 if (!Array.isArray(trainer.inventoryList)) trainer.inventoryList = [];
-                const inventoryHtml = trainer.inventoryList.map((item, iIndex) => `
-                    <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs shadow-sm">
-                        <div class="flex items-center gap-1.5 truncate pr-2">
-                            <span class="font-bold text-gray-800 truncate">${item.name}</span>
-                            <span class="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded uppercase font-semibold">${item.type || 'Item'}</span>
-                            <button onclick="inspectItemText('${(item.name || '').replace(/'/g, "\\'")}')" class="text-[10px] text-blue-600 hover:text-blue-800 font-bold px-1" title="Inspect Item Details">ℹ️</button>
+                const inventoryHtml = trainer.inventoryList.map((item, iIndex) => {
+                    const iconUrl = getItemSpriteUrl(item.name, item.type);
+                    return `
+                    <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-gray-200 text-xs shadow-sm">
+                        <div class="flex items-center gap-2.5 truncate pr-2 min-w-0">
+                            <img src="${iconUrl}" alt="${item.name}" class="w-9 h-9 object-contain shrink-0 bg-gray-50 rounded-lg border border-gray-100 p-1" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                            <span class="font-bold text-gray-800 text-sm truncate">${item.name}</span>
+                            <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded uppercase font-semibold shrink-0">${item.type || 'Item'}</span>
+                            <button onclick="inspectItemText('${(item.name || '').replace(/'/g, "\\'")}')" class="text-xs text-blue-600 hover:text-blue-800 font-bold px-1 shrink-0" title="Inspect Item Details">ℹ️</button>
                         </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            ${isGameMaster ? `<button onclick="useInventoryItem(${tIndex}, ${iIndex})" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded font-bold text-[10px]" title="Use 1x Item">Use</button>` : ''}
-                            ${isGameMaster ? `<button onclick="adjustInventoryQty(${tIndex}, ${iIndex}, -1)" class="w-5 h-5 bg-gray-100 hover:bg-gray-200 rounded font-bold text-gray-700">-</button>` : ''}
-                            <span class="font-extrabold w-6 text-center text-gray-900">${item.qty}</span>
-                            ${isGameMaster ? `<button onclick="adjustInventoryQty(${tIndex}, ${iIndex}, 1)" class="w-5 h-5 bg-gray-100 hover:bg-gray-200 rounded font-bold text-gray-700">+</button>` : ''}
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${isGameMaster ? `<button onclick="useInventoryItem(${tIndex}, ${iIndex})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-bold text-xs" title="Use 1x Item">Use</button>` : ''}
+                            ${isGameMaster ? `<button onclick="adjustInventoryQty(${tIndex}, ${iIndex}, -1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded-md font-bold text-gray-700">-</button>` : ''}
+                            <span class="font-extrabold w-7 text-center text-gray-900 text-sm">${item.qty}</span>
+                            ${isGameMaster ? `<button onclick="adjustInventoryQty(${tIndex}, ${iIndex}, 1)" class="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded-md font-bold text-gray-700">+</button>` : ''}
                         </div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
 
                 let pokemonHtml = (trainer.pokemon || []).map((poke, pIndex) => {
                     while (poke.moves.length < 4) poke.moves.push({ name: '', ppCurr: 0, ppMax: 0 });
@@ -1814,73 +1938,82 @@
 
                     const statusOptions = statusConditions.map(s => `<option value="${s}" ${poke.status===s?'selected':''}>${s}</option>`).join('');
                     const natureOptions = NATURES.map(nat => `<option value="${nat}" ${(poke.nature||'Hardy')===nat?'selected':''}>${NATURES_DATA[nat].label}</option>`).join('');
-                    const typeBadges = (poke.types || []).map(t => `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${TYPE_COLORS[t] || 'bg-gray-500'}">${t}</span>`).join(' ');
+                    const typeBadges = (poke.types || []).map(t => `<span class="px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase ${TYPE_COLORS[t] || 'bg-gray-500'}">${t}</span>`).join(' ');
                     const matchups = computeDefensiveMatchups(poke.types || []);
                     const repoInfo = lookupPokemon(poke.species);
                     const canEvolve = repoInfo && repoInfo.evolution?.to?.length > 0;
+                    const spriteUrl = getPokemonSpriteUrl(poke.species, poke.shiny);
 
                     let movesHtml = poke.moves.map((move, mIndex) => {
                         const mInfo = lookupMove(move.name);
-                        const mTypeBadge = mInfo ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${TYPE_COLORS[mInfo.type] || 'bg-gray-400 text-white'}">${mInfo.type.slice(0,3)}</span>` : '';
+                        const mTypeBadge = mInfo ? `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shrink-0 ${TYPE_COLORS[mInfo.type] || 'bg-gray-400 text-white'}">${mInfo.type.slice(0,3)}</span>` : '';
                         return `
-                        <div class="flex items-center gap-1 mb-1.5">
-                            <input type="text" list="moves-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${move.name || ''}" placeholder="Move or TM ${mIndex+1}" class="flex-1 min-w-[110px] border border-gray-300 rounded px-2 py-1 text-xs font-semibold">
+                        <div class="flex items-center gap-1.5 mb-2 min-w-0">
+                            <input type="text" list="moves-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${move.name || ''}" placeholder="Move or TM ${mIndex+1}" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold">
                             ${mTypeBadge}
-                            <button onclick="inspectMove(${tIndex}, ${pIndex}, ${mIndex})" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded px-2 py-1 text-xs font-bold shrink-0" title="Inspect & Roll Move">🎲</button>
-                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, -1)" class="bg-gray-200 hover:bg-gray-300 w-5 h-6 rounded text-xs font-bold shrink-0">-</button>
-                            <input type="number" id="pp-${tIndex}-${pIndex}-${mIndex}" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppCurr" value="${move.ppCurr}" class="w-10 text-center border border-gray-300 rounded py-1 text-xs font-bold shrink-0">
-                            <span class="text-xs text-gray-400">/</span>
-                            <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppMax" value="${move.ppMax}" class="w-10 text-center border border-gray-300 rounded py-1 text-xs text-gray-500 shrink-0">
-                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, 1)" class="bg-gray-200 hover:bg-gray-300 w-5 h-6 rounded text-xs font-bold shrink-0">+</button>
+                            <button onclick="inspectMove(${tIndex}, ${pIndex}, ${mIndex})" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 text-xs font-bold shrink-0 shadow-sm" title="Inspect & Roll Move">🎲</button>
+                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, -1)" class="bg-gray-200 hover:bg-gray-300 w-6 h-7 rounded-md text-xs font-bold shrink-0">-</button>
+                            <input type="number" id="pp-${tIndex}-${pIndex}-${mIndex}" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppCurr" value="${move.ppCurr}" class="w-10 text-center border border-gray-300 rounded-lg py-1 text-xs font-bold shrink-0">
+                            <span class="text-xs text-gray-400 shrink-0">/</span>
+                            <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppMax" value="${move.ppMax}" class="w-10 text-center border border-gray-300 rounded-lg py-1 text-xs text-gray-500 shrink-0">
+                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, 1)" class="bg-gray-200 hover:bg-gray-300 w-6 h-7 rounded-md text-xs font-bold shrink-0">+</button>
                         </div>`;
                     }).join('');
 
+                    const savedDim = cardDims.get(poke.id);
+                    const inlineSizeStyle = savedDim ? `style="width:${savedDim.width};height:${savedDim.height};"` : '';
+
                     return `
-                    <div class="pokemon-card rounded-xl border border-gray-200 p-4 relative shadow-sm ${poke.shiny ? 'shiny-card' : 'bg-gray-50'}">
-                        ${isGameMaster ? `<button onclick="removePokemon(${tIndex}, ${pIndex})" class="absolute top-2.5 right-2.5 text-gray-400 hover:text-red-500 text-xs font-bold">✖</button>` : ''}
-                        <div class="flex flex-wrap items-center gap-1.5 mb-2 pr-5">
-                            ${typeBadges || `<span class="text-[10px] text-gray-400 italic">Select species</span>`}
-                            <span class="text-[10px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded font-bold">SR ${poke.sr ?? 1}</span>
-                            <button onclick="pokemonShortRestHitDie(${tIndex}, ${pIndex})" class="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded font-bold border border-emerald-300">⛺ Hit Die (${poke.hitDice || 'd6'})</button>
-                            ${isGameMaster ? `<button onclick="toggleShiny(${tIndex}, ${pIndex})" class="text-[10px] px-1.5 py-0.5 rounded font-bold border ${poke.shiny ? 'bg-yellow-400 text-gray-900' : 'bg-white text-gray-500'}">✨</button>` : ''}
-                            ${canEvolve && isGameMaster ? `<button onclick="evolvePokemon(${tIndex}, ${pIndex})" class="text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-2 py-0.5 rounded font-bold shadow-sm">✨ Evolve</button>` : ''}
-                            ${poke.speed ? `<span class="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-semibold">${poke.speed}</span>` : ''}
+                    <div data-pokeid="${poke.id}" ${inlineSizeStyle} class="pokemon-card rounded-2xl border border-gray-200 p-4 relative shadow-sm ${poke.shiny ? 'shiny-card' : 'bg-gray-50'}">
+                        ${isGameMaster ? `<button onclick="removePokemon(${tIndex}, ${pIndex})" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-sm font-bold">✖</button>` : ''}
+                        <div class="flex items-center gap-3.5 mb-3 pr-6">
+                            <div class="w-22 h-22 rounded-2xl bg-white border-2 border-gray-200 flex items-center justify-center shrink-0 shadow-md overflow-hidden p-1">
+                                <img src="${spriteUrl}" alt="${poke.species || 'Pokémon'}" class="w-20 h-20 object-contain drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                                ${typeBadges || `<span class="text-xs text-gray-400 italic">Select species</span>`}
+                                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold">SR ${poke.sr ?? 1}</span>
+                                <button onclick="pokemonShortRestHitDie(${tIndex}, ${pIndex})" class="text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300">⛺ Hit Die (${poke.hitDice || 'd6'})</button>
+                                ${isGameMaster ? `<button onclick="toggleShiny(${tIndex}, ${pIndex})" class="text-xs px-2 py-0.5 rounded font-bold border ${poke.shiny ? 'bg-yellow-400 text-gray-900' : 'bg-white text-gray-500'}" title="Toggle Shiny Sprite">✨</button>` : ''}
+                                ${canEvolve && isGameMaster ? `<button onclick="evolvePokemon(${tIndex}, ${pIndex})" class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded font-bold shadow-sm">✨ Evolve</button>` : ''}
+                                ${poke.speed ? `<span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">${poke.speed}</span>` : ''}
+                            </div>
                         </div>
                         ${(matchups.weak.length || matchups.resist.length || matchups.immune.length) ? `
-                        <div class="bg-white/90 border border-gray-200 rounded-lg p-2 mb-2.5 text-[10px] leading-tight space-y-0.5">
+                        <div class="bg-white/90 border border-gray-200 rounded-xl p-2.5 mb-3 text-xs leading-relaxed space-y-0.5 shadow-sm">
                             ${matchups.weak.length ? `<div><strong class="text-red-600">WEAK:</strong> ${matchups.weak.join(', ')}</div>` : ''}
                             ${matchups.resist.length ? `<div><strong class="text-emerald-700">RESIST:</strong> ${matchups.resist.join(', ')}</div>` : ''}
                             ${matchups.immune.length ? `<div><strong class="text-indigo-700">IMMUNE:</strong> ${matchups.immune.join(', ')}</div>` : ''}
                         </div>` : ''}
                         <div class="grid grid-cols-12 gap-2 mb-2">
-                            <div class="col-span-6">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Species (Auto-Fill)</label>
-                                <div class="flex items-center gap-1">
-                                    <input type="text" id="p-s-${tIndex}-${pIndex}" list="pokemon-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species || ''}" placeholder="Bulbasaur" class="flex-1 border border-gray-300 rounded p-1.5 text-sm font-bold">
-                                    ${isGameMaster ? `<button onclick="autoFillPokemon(${tIndex}, ${pIndex})" class="bg-yellow-400 hover:bg-yellow-300 text-yellow-950 rounded px-2.5 py-1.5 text-xs font-extrabold shadow-sm" title="Auto-fill from Jufinda/poke5e">⚡</button>` : ''}
+                            <div class="col-span-6 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Species (Auto-Fill)</label>
+                                <div class="flex items-center gap-1 min-w-0">
+                                    <input type="text" id="p-s-${tIndex}-${pIndex}" list="pokemon-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species || ''}" placeholder="Bulbasaur" class="flex-1 min-w-0 w-full border border-gray-300 rounded p-1.5 text-sm font-bold">
+                                    ${isGameMaster ? `<button onclick="autoFillPokemon(${tIndex}, ${pIndex})" class="shrink-0 bg-yellow-400 hover:bg-yellow-300 text-yellow-950 rounded px-2 py-1.5 text-xs font-extrabold shadow-sm" title="Auto-fill from Jufinda/poke5e">⚡</button>` : ''}
                                 </div>
                             </div>
-                            <div class="col-span-3">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Lvl</label>
-                                <input type="number" min="1" max="20" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="level" value="${poke.level}" class="w-full border border-gray-300 rounded p-1.5 text-sm text-center font-bold">
+                            <div class="col-span-3 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Lvl</label>
+                                <input type="number" min="1" max="20" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="level" value="${poke.level}" class="w-full min-w-0 border border-gray-300 rounded p-1.5 text-sm text-center font-bold">
                             </div>
-                            <div class="col-span-3">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Bond (-3/+3)</label>
-                                <input type="number" min="-3" max="3" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="bond" value="${poke.bond ?? 1}" class="w-full border border-gray-300 rounded p-1.5 text-sm text-center font-bold">
+                            <div class="col-span-3 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Bond (-3/+3)</label>
+                                <input type="number" min="-3" max="3" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="bond" value="${poke.bond ?? 1}" class="w-full min-w-0 border border-gray-300 rounded p-1.5 text-sm text-center font-bold">
                             </div>
                         </div>
                         <div class="grid grid-cols-12 gap-2 mb-2">
-                            <div class="col-span-5">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Nature (+2 / -2)</label>
-                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="nature" class="w-full border border-gray-300 rounded p-1.5 text-[11px] bg-white font-medium">${natureOptions}</select>
+                            <div class="col-span-5 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Nature (+2 / -2)</label>
+                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="nature" class="w-full min-w-0 border border-gray-300 rounded p-1.5 text-[11px] bg-white font-medium">${natureOptions}</select>
                             </div>
-                            <div class="col-span-4">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Held Item</label>
-                                <input type="text" list="items-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="heldItem" value="${poke.heldItem || ''}" placeholder="Leftovers..." class="w-full border border-gray-300 rounded p-1.5 text-xs">
+                            <div class="col-span-4 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Held Item</label>
+                                <input type="text" list="items-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="heldItem" value="${poke.heldItem || ''}" placeholder="Leftovers..." class="w-full min-w-0 border border-gray-300 rounded p-1.5 text-xs">
                             </div>
-                            <div class="col-span-3">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Transform</label>
-                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="transformation" class="w-full border border-gray-300 rounded p-1.5 text-[11px] bg-white font-semibold">
+                            <div class="col-span-3 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Transform</label>
+                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="transformation" class="w-full min-w-0 border border-gray-300 rounded p-1.5 text-[11px] bg-white font-semibold">
                                     <option value="None" ${(poke.transformation||'None')==='None'?'selected':''}>None</option>
                                     <option value="Mega" ${poke.transformation==='Mega'?'selected':''}>Mega</option>
                                     <option value="Dynamax" ${poke.transformation==='Dynamax'?'selected':''}>Dynamax</option>
@@ -1890,39 +2023,39 @@
                             </div>
                         </div>
                         <div class="grid grid-cols-12 gap-2 mb-2 items-end">
-                            <div class="col-span-6">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">HP</label>
-                                <div class="flex items-center space-x-1">
-                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, -1)" class="bg-red-100 text-red-700 w-7 h-8 rounded text-sm font-bold">-</button>` : ''}
-                                    <input type="number" id="p-${tIndex}-${pIndex}-hp" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpCurr" value="${poke.hpCurr}" class="w-14 text-center border border-gray-300 rounded p-1.5 text-xs font-bold">
-                                    <span class="text-gray-400 text-xs">/</span>
-                                    <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpMax" value="${poke.hpMax}" class="w-14 text-center border border-gray-300 rounded p-1.5 text-xs text-gray-500">
-                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, 1)" class="bg-green-100 text-green-700 w-7 h-8 rounded text-sm font-bold">+</button>` : ''}
+                            <div class="col-span-6 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">HP</label>
+                                <div class="flex items-center space-x-1 min-w-0">
+                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, -1)" class="shrink-0 bg-red-100 text-red-700 w-6 h-8 rounded text-sm font-bold">-</button>` : ''}
+                                    <input type="number" id="p-${tIndex}-${pIndex}-hp" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpCurr" value="${poke.hpCurr}" class="flex-1 min-w-0 text-center border border-gray-300 rounded p-1 text-xs font-bold">
+                                    <span class="text-gray-400 text-xs shrink-0">/</span>
+                                    <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpMax" value="${poke.hpMax}" class="flex-1 min-w-0 text-center border border-gray-300 rounded p-1 text-xs text-gray-500">
+                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, 1)" class="shrink-0 bg-green-100 text-green-700 w-6 h-8 rounded text-sm font-bold">+</button>` : ''}
                                 </div>
                             </div>
-                            <div class="col-span-2">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">AC</label>
-                                <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ac" value="${poke.ac}" class="w-full border border-gray-300 rounded p-1.5 text-xs text-center font-bold">
+                            <div class="col-span-2 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">AC</label>
+                                <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ac" value="${poke.ac}" class="w-full min-w-0 border border-gray-300 rounded p-1.5 text-xs text-center font-bold">
                             </div>
-                            <div class="col-span-4">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Status</label>
-                                <div class="flex items-center gap-1">
-                                    <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="status" class="flex-1 border border-gray-300 rounded p-1.5 text-xs bg-white">${statusOptions}</select>
-                                    <button onclick="inspectStatus('${poke.status || 'Normal'}')" class="bg-amber-50 text-amber-700 border border-amber-200 rounded px-1.5 py-1 text-xs font-bold" title="Status Rule">?</button>
+                            <div class="col-span-4 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Status</label>
+                                <div class="flex items-center gap-1 min-w-0">
+                                    <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="status" class="flex-1 min-w-0 border border-gray-300 rounded p-1.5 text-xs bg-white">${statusOptions}</select>
+                                    <button onclick="inspectStatus('${poke.status || 'Normal'}')" class="shrink-0 bg-amber-50 text-amber-700 border border-amber-200 rounded px-1.5 py-1 text-xs font-bold" title="Status Rule">?</button>
                                 </div>
                             </div>
                         </div>
                         <div class="grid grid-cols-12 gap-2 mb-2">
-                            <div class="col-span-6">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Ability</label>
-                                <div class="flex items-center gap-1">
-                                    <input type="text" list="abilities-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${poke.ability || ''}" placeholder="Overgrow..." class="flex-1 border border-gray-300 rounded p-1.5 text-xs font-medium">
-                                    <button onclick="inspectAbilityText('${(poke.ability || '').replace(/'/g, "\\'")}')" class="bg-purple-50 text-purple-700 border border-purple-200 rounded px-2 py-1 text-xs font-bold" title="Inspect Ability">ℹ️</button>
+                            <div class="col-span-6 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Ability</label>
+                                <div class="flex items-center gap-1 min-w-0">
+                                    <input type="text" list="abilities-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${poke.ability || ''}" placeholder="Overgrow..." class="flex-1 min-w-0 border border-gray-300 rounded p-1.5 text-xs font-medium">
+                                    <button onclick="inspectAbilityText('${(poke.ability || '').replace(/'/g, "\\'")}')" class="shrink-0 bg-purple-50 text-purple-700 border border-purple-200 rounded px-2 py-1 text-xs font-bold" title="Inspect Ability">ℹ️</button>
                                 </div>
                             </div>
-                            <div class="col-span-6">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Pokémon Feats</label>
-                                <input type="text" list="feats-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="feats" value="${poke.feats || ''}" placeholder="Tough, Mobile..." class="w-full border border-gray-300 rounded p-1.5 text-xs">
+                            <div class="col-span-6 min-w-0">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Pokémon Feats</label>
+                                <input type="text" list="feats-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="feats" value="${poke.feats || ''}" placeholder="Tough, Mobile..." class="w-full min-w-0 border border-gray-300 rounded p-1.5 text-xs">
                             </div>
                         </div>
                         <div class="bg-white p-2.5 rounded-lg border border-gray-200 mb-2">
@@ -2026,7 +2159,10 @@
                             </div>
 
                             <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-200 space-y-2">
-                                <label class="block text-xs font-bold text-gray-700 uppercase">🎒 Interactive Inventory, TMs & Items</label>
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-bold text-gray-700 uppercase">🎒 Interactive Inventory, TMs & Items</label>
+                                    ${isGameMaster && trainer.inventoryList.length > 0 ? `<button onclick="clearTrainerInventory(${tIndex})" class="text-[10px] text-gray-400 hover:text-red-500 font-semibold" title="Empty Inventory">🧹 Clear</button>` : ''}
+                                </div>
                                 ${isGameMaster ? `
                                 <div class="flex gap-1">
                                     <input type="text" id="inv-add-input-${tIndex}" list="items-datalist" placeholder="Search Poké Ball, Great Ball, Potion..." class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
@@ -2053,6 +2189,8 @@
                     </div>`;
                 app.appendChild(trainerEl);
             });
+
+            document.querySelectorAll('.pokemon-card').forEach(el => cardResizeObserver.observe(el));
         }
 
         function displayToast() { displayCustomToast("💾", "Synced Live"); }
@@ -2069,6 +2207,7 @@
         function executeClear() { appState = []; diceLog = []; saveData(true); closeModal(); addTrainer(); }
 
         // Explicitly attach all functions to window for inline onclick handlers
+        window.toggleDarkMode = toggleDarkMode;
         window.hostGame = hostGame;
         window.joinGameBtn = joinGameBtn;
         window.openGuideModal = openGuideModal;
@@ -2094,6 +2233,7 @@
         window.trainerLongRest = trainerLongRest;
         window.pokemonShortRestHitDie = pokemonShortRestHitDie;
         window.addItemToInventory = addItemToInventory;
+        window.clearTrainerInventory = clearTrainerInventory;
         window.inspectPendingItem = inspectPendingItem;
         window.useInventoryItem = useInventoryItem;
         window.adjustInventoryQty = adjustInventoryQty;
