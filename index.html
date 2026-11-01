@@ -26,13 +26,13 @@
         <p class="text-red-200 mt-1 text-sm font-semibold tracking-widest mb-4">LIVE MULTIPLAYER SESSION & TOOLKIT</p>
         
         <div class="flex flex-wrap justify-center gap-3 mt-4">
-            <!-- Navigation linking to your forked Poké5e official repository pages -->
-            <a href="https://jufinda.github.io/poke5e/pokemon" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Pokédex</a>
-            <a href="https://jufinda.github.io/poke5e/moves" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Moves</a>
-            <a href="https://jufinda.github.io/poke5e/items" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Items</a>
-            <a href="https://jufinda.github.io/poke5e/rules" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Rules</a>
-            <a href="https://jufinda.github.io/poke5e/encounter-tool" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Encounters</a>
-            <a href="https://jufinda.github.io/poke5e/trainers" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Trainer Builder</a>
+            <!-- Navigation linking to your forked Poké5e official repository pages with proper sub-path routes -->
+            <a href="/poke5e/pokemon" class="bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Pokédex</a>
+            <a href="/poke5e/moves" class="bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Moves</a>
+            <a href="/poke5e/items" class="bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Items</a>
+            <a href="/poke5e/rules" class="bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Rules</a>
+            <a href="/poke5e/encounter-tool" class="bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Encounters</a>
+            <a href="/poke5e/trainers" class="bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Trainer Builder</a>
             
             <button onclick="addTrainer()" id="add-trainer-btn" class="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full font-semibold text-xs transition-colors shadow flex items-center hidden">
                 + Add Trainer
@@ -281,8 +281,8 @@
             const pokeId = idInput ? idInput.value.trim().toUpperCase() : '';
             if (!pokeId) { alert("Please enter a valid Poké5e Trainer ID!"); return; }
 
-            // Open the official trainer lookup link in a new tab directly from your forked repo
-            window.open(`https://jufinda.github.io/poke5e/trainers?id=${pokeId}`, '_blank');
+            // Open the official trainer lookup link using the correct repository sub-route path
+            window.open(`/poke5e/trainers?id=${pokeId}`, '_blank');
         }
 
         function saveData(silent = false) {
@@ -502,7 +502,7 @@
                                     <input type="text" id="poke-id-${tIndex}" value="${trainer.pokeId || ''}" placeholder="e.g. RMC0E9Z837KX" class="flex-1 border border-blue-300 rounded p-1 text-sm font-mono uppercase bg-white">
                                     ${isGameMaster ? `<button onclick="fetchPoke5eTrainer(${tIndex})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">🔍 View</button>` : ''}
                                 </div>
-                                <p class="text-[10px] text-blue-600 mt-1">Check your forked <a href="https://jufinda.github.io/poke5e/trainers" target="_blank" class="underline font-semibold">/trainers</a> builder page.</p>
+                                <p class="text-[10px] text-blue-600 mt-1">Check your forked <a href="/poke5e/trainers" target="_blank" class="underline font-semibold">/trainers</a> builder page.</p>
                             </div>
 
                             <div class="flex gap-4">
