@@ -30,14 +30,14 @@
     <datalist id="abilities-datalist"></datalist>
     <datalist id="tms-datalist"></datalist>
     <datalist id="paths-datalist">
-        <option value="Ace Trainer">Ace Trainer (+1 to hit/damage rolls, Battle Dice superiority)</option>
-        <option value="Pokémon Collector">Pokémon Collector (Extra Pokéslots & Capture DC bonuses)</option>
-        <option value="Nurse">Nurse (Pokécenter healing & status cure specialist)</option>
-        <option value="Pokéchef">Pokéchef (Berry & meal buffs during Short/Long Rests)</option>
-        <option value="Researcher">Researcher (Pokedex analysis, Evolution & TM mastery)</option>
-        <option value="Tactician">Tactician (Command allies, battlefield control & swap actions)</option>
-        <option value="Commander">Commander (Aura buffs & multi-target leadership)</option>
-        <option value="Ranger">Ranger (Wilderness survival, Nature & Biome mastery)</option>
+        <option value="Ace Trainer">+1 to hit/damage rolls, Battle Dice superiority</option>
+        <option value="Pokémon Collector">Extra Pokéslots & Capture DC bonuses</option>
+        <option value="Nurse">Pokécenter healing & status cure specialist</option>
+        <option value="Pokéchef">Berry & meal buffs during Short/Long Rests</option>
+        <option value="Researcher">Pokedex analysis, Evolution & TM mastery</option>
+        <option value="Tactician">Command allies, battlefield control & swap actions</option>
+        <option value="Commander">Aura buffs & multi-target leadership</option>
+        <option value="Ranger">Wilderness survival, Nature & Biome mastery</option>
     </datalist>
     <datalist id="specs-datalist">
         <option value="None"></option>
@@ -730,7 +730,7 @@
                 moveListEl.innerHTML = poke5eDB.moves.map(m => {
                     poke5eDB.movesById.set(m.id.toLowerCase(), m);
                     poke5eDB.movesByName.set(m.name.toLowerCase(), m);
-                    return `<option value="${m.name}">${m.type.toUpperCase()} | PP: ${m.pp} | ${m.time}</option>`;
+                    return `<option value="${m.name}">${m.name} - ${m.type.toUpperCase()} | PP: ${m.pp} | ${m.time}</option>`;
                 }).join('');
 
                 const pokeListEl = document.getElementById('pokemon-datalist');
@@ -1609,7 +1609,8 @@
                 const pool = poke5eDB.pokemon.filter(p => {
                     const srOk = (p.sr ?? 1) <= maxSr;
                     const typeOk = typeFilter === 'any' || (p.type && p.type.includes(typeFilter));
-                    const pBiomes = (p.biomes || p.habitat || []).map(b => String(b).toLowerCase());
+                    const rawBiomes = p.biomes || p.habitat || [];
+                    const pBiomes = Array.isArray(rawBiomes) ? rawBiomes.map(b => String(b).toLowerCase()) : [];
                     const biomeOk = biomeFilter === 'any' || pBiomes.length === 0 || pBiomes.some(b => b.includes(biomeFilter));
                     return srOk && typeOk && biomeOk;
                 });
