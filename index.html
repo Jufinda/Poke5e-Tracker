@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poké5e Multi-Trainer Campaign Tracker & Hub</title>
+    <title>Poké5e Multi-Trainer Campaign Tracker & Complete Rulebook Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -16,6 +16,7 @@
         .pokeball-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background-color: white; border: 8px solid #1a1a1a; border-radius: 50%; box-shadow: inset 0 0 0 2px white, inset 0 0 0 4px #1a1a1a; }
         #toast { visibility: hidden; opacity: 0; transition: opacity 0.3s, visibility 0.3s; }
         #toast.show { visibility: visible; opacity: 1; }
+        .shiny-card { background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fef08a 100%); border-color: #eab308 !important; }
     </style>
 </head>
 <body class="text-gray-800 pb-24">
@@ -25,6 +26,64 @@
     <datalist id="moves-datalist"></datalist>
     <datalist id="items-datalist"></datalist>
     <datalist id="abilities-datalist"></datalist>
+    <datalist id="tms-datalist"></datalist>
+    <datalist id="paths-datalist">
+        <option value="Ace Trainer">+1 to hit/damage rolls, Battle Dice superiority</option>
+        <option value="Pokémon Collector">Extra Pokéslots & Capture DC bonuses</option>
+        <option value="Nurse">Pokécenter healing & status cure specialist</option>
+        <option value="Pokéchef">Berry & meal buffs during Short/Long Rests</option>
+        <option value="Researcher">Pokedex analysis, Evolution & TM mastery</option>
+        <option value="Tactician">Command allies, battlefield control & swap actions</option>
+        <option value="Commander">Aura buffs & multi-target leadership</option>
+        <option value="Ranger">Wilderness survival, Nature & Biome mastery</option>
+    </datalist>
+    <datalist id="specs-datalist">
+        <option value="None"></option>
+        <option value="Normal">Normal (+1 check/save with Normal Pokémon)</option>
+        <option value="Fire">Fire (+1 check/save with Fire Pokémon)</option>
+        <option value="Water">Water (+1 check/save with Water Pokémon)</option>
+        <option value="Grass">Grass (+1 check/save with Grass Pokémon)</option>
+        <option value="Electric">Electric (+1 check/save with Electric Pokémon)</option>
+        <option value="Ice">Ice (+1 check/save with Ice Pokémon)</option>
+        <option value="Fighting">Fighting (+1 check/save with Fighting Pokémon)</option>
+        <option value="Poison">Poison (+1 check/save with Poison Pokémon)</option>
+        <option value="Ground">Ground (+1 check/save with Ground Pokémon)</option>
+        <option value="Flying">Flying (+1 check/save with Flying Pokémon)</option>
+        <option value="Psychic">Psychic (+1 check/save with Psychic Pokémon)</option>
+        <option value="Bug">Bug (+1 check/save with Bug Pokémon)</option>
+        <option value="Rock">Rock (+1 check/save with Rock Pokémon)</option>
+        <option value="Ghost">Ghost (+1 check/save with Ghost Pokémon)</option>
+        <option value="Dragon">Dragon (+1 check/save with Dragon Pokémon)</option>
+        <option value="Dark">Dark (+1 check/save with Dark Pokémon)</option>
+        <option value="Steel">Steel (+1 check/save with Steel Pokémon)</option>
+        <option value="Fairy">Fairy (+1 check/save with Fairy Pokémon)</option>
+    </datalist>
+    <datalist id="feats-datalist">
+        <option value="Acrobat">+1 DEX, Acrobatics proficiency</option>
+        <option value="Actor">+1 CHA, Deception/Performance advantage</option>
+        <option value="Alert">+5 Initiative, cannot be surprised</option>
+        <option value="Athlete">+1 STR/DEX, climbing/standing speed</option>
+        <option value="Brawny">+1 STR, Athletics expertise & carrying capacity</option>
+        <option value="Charger">Bonus action attack or push after Dash</option>
+        <option value="Durable">+1 CON, minimum Hit Dice healing</option>
+        <option value="Elemental Adept">Moves ignore resistance of chosen type</option>
+        <option value="Extra Move">Can learn 5 moves instead of 4</option>
+        <option value="Hidden Ability">Unlocks species Hidden Ability</option>
+        <option value="Lucky">3 Luck points per Long Rest</option>
+        <option value="Melee Master">-5 to hit / +10 damage on melee moves</option>
+        <option value="Mobile">+10ft speed, ignore difficult terrain on Dash</option>
+        <option value="Observant">+1 INT/WIS, +5 passive Perception/Investigation</option>
+        <option value="Perceptive">+1 WIS, Perception expertise</option>
+        <option value="Power Sculptor">Protect allies from AoE moves</option>
+        <option value="Ranged Master">-5 to hit / +10 damage on ranged moves</option>
+        <option value="Resilient">+1 Stat and saving throw proficiency</option>
+        <option value="Sentinel">Opportunity attacks reduce speed to 0</option>
+        <option value="Skilled">Gain proficiency in 3 skills</option>
+        <option value="Skill Expert">+1 Stat, 1 proficiency, 1 expertise</option>
+        <option value="Terastallize">Change elemental type once per Long Rest</option>
+        <option value="Tireless">+1 CON, +1 PP to all moves</option>
+        <option value="Tough">Max HP increases by 2x Level</option>
+    </datalist>
 
     <!-- Header Section -->
     <header class="bg-red-600 text-white pt-6 pb-4 px-4 text-center relative shadow-md">
@@ -33,21 +92,28 @@
                 <h1 class="text-3xl md:text-4xl font-extrabold tracking-wider uppercase drop-shadow-md">Poké5e Campaign Hub</h1>
             </div>
             <p class="text-red-100 mt-1 text-xs font-semibold tracking-widest uppercase">
-                LIVE FIREBASE MULTIPLAYER • POWERED BY <span id="db-status-badge" class="bg-black/30 px-2 py-0.5 rounded text-yellow-300">⏳ Loading Jufinda/poke5e DB...</span>
+                COMPLETE RULES EDITION • POWERED BY <span id="db-status-badge" class="bg-black/30 px-2 py-0.5 rounded text-yellow-300">⏳ Loading Jufinda/poke5e DB...</span>
             </p>
             
             <div class="flex flex-wrap justify-center gap-2 mt-4">
                 <!-- In-App Compendium & GM Tools -->
                 <button onclick="openCompendiumModal()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow flex items-center gap-1">
-                    📖 Forked Compendium Search
+                    📖 Compendium & TMs
+                </button>
+                <button onclick="openRulesCheatModal()" class="bg-amber-500 hover:bg-amber-400 text-gray-900 px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow flex items-center gap-1">
+                    📜 Rules & Status Reference
                 </button>
                 <button onclick="toggleEncounterPanel()" id="encounter-toggle-btn" class="bg-indigo-700 hover:bg-indigo-600 text-white px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow border border-indigo-400 flex items-center gap-1 hidden">
-                    🌿 Wild Encounter & Catch DC
+                    🌿 Wild Encounter & Biomes
+                </button>
+                <button onclick="partyPokecenterRest()" id="party-rest-btn" class="bg-pink-600 hover:bg-pink-500 text-white px-3.5 py-1.5 rounded-full font-bold text-xs transition-colors shadow border border-pink-300 flex items-center gap-1 hidden" title="Full Heal All Trainers & Pokémon">
+                    🏥 Pokécenter Party Rest
                 </button>
 
                 <!-- Official Reference Links -->
                 <a href="https://poke5e.app/pokemon" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Pokédex ↗</a>
                 <a href="https://poke5e.app/moves" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Moves ↗</a>
+                <a href="https://poke5e.app/tms" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">TMs ↗</a>
                 <a href="https://poke5e.app/items" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Items ↗</a>
                 <a href="https://poke5e.app/rules" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Rules ↗</a>
                 <a href="https://poke5e.app/trainers" target="_blank" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full font-semibold text-xs transition-colors backdrop-blur-sm border border-white/30 flex items-center">Trainer Builder ↗</a>
@@ -74,7 +140,7 @@
     <!-- LOBBY UI -->
     <div id="lobby-screen" class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 text-center border-t-8 border-red-600 mt-8">
         <h2 class="text-2xl font-bold mb-2 text-gray-900">Multiplayer Lobby</h2>
-        <p class="text-xs text-gray-500 mb-6"> Host as Game Master or enter a 4-letter Room Code to join your party.</p>
+        <p class="text-xs text-gray-500 mb-6">Host as Game Master or enter a 4-letter Room Code to join your party.</p>
         <div class="space-y-4">
             <div class="mb-2 text-left">
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Your Name / Handle</label>
@@ -98,28 +164,56 @@
         <p id="lobby-error" class="text-red-500 mt-4 text-sm font-semibold hidden"></p>
     </div>
 
-    <!-- Active Game Header -->
-    <div id="active-game-header" class="max-w-7xl mx-auto px-4 text-center mb-6 hidden">
-        <div class="inline-flex flex-wrap items-center justify-center gap-4 bg-white border-2 border-gray-200 text-gray-800 font-bold px-6 py-2 rounded-full text-sm md:text-base shadow-sm">
-            <span>Room Code: <strong id="display-room-code" class="tracking-widest text-lg text-blue-600 font-mono"></strong></span>
-            <span class="text-gray-300">|</span>
-            <span>Role: <strong id="display-role" class="text-red-600"></strong></span>
-            <span class="text-gray-300">|</span>
-            <span class="text-xs text-gray-500">Repo Source: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">Jufinda/poke5e</code></span>
+    <!-- Active Game Header & Global Battlefield Weather / Terrain Bar -->
+    <div id="active-game-header" class="max-w-7xl mx-auto px-4 mb-6 hidden space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white border-2 border-gray-200 text-gray-800 font-bold px-5 py-2.5 rounded-2xl text-xs md:text-sm shadow-sm">
+            <div class="flex flex-wrap items-center gap-3">
+                <span>Room Code: <strong id="display-room-code" class="tracking-widest text-base text-blue-600 font-mono"></strong></span>
+                <span class="text-gray-300">|</span>
+                <span>Role: <strong id="display-role" class="text-red-600"></strong></span>
+                <span class="text-gray-300">|</span>
+                <span class="text-xs text-gray-500">Fork Source: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">Jufinda/poke5e</code></span>
+            </div>
+
+            <!-- Global Weather & Terrain Controls (Appendix Rules) -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                    <span class="text-[10px] uppercase font-extrabold text-amber-800">☀️ Weather:</span>
+                    <select id="global-weather-select" onchange="updateEnvironment('weather', this.value)" class="bg-transparent text-xs font-bold text-gray-800 focus:outline-none">
+                        <option value="Clear">Clear Skies</option>
+                        <option value="Harsh Sunlight">Harsh Sunlight (Fire Adv / Water Dis)</option>
+                        <option value="Rain">Rain (Water Adv / Fire Dis)</option>
+                        <option value="Sandstorm">Sandstorm (1d6 chip / Rock +2 AC)</option>
+                        <option value="Hail">Hail / Snow (1d6 chip / Ice +2 AC)</option>
+                        <option value="Strong Winds">Strong Winds (Flying immunity)</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                    <span class="text-[10px] uppercase font-extrabold text-emerald-800">🌱 Terrain:</span>
+                    <select id="global-terrain-select" onchange="updateEnvironment('terrain', this.value)" class="bg-transparent text-xs font-bold text-gray-800 focus:outline-none">
+                        <option value="Normal">Normal Ground</option>
+                        <option value="Electric Terrain">Electric (No Sleep / +PB Electric Dmg)</option>
+                        <option value="Grassy Terrain">Grassy (+PB Grass Dmg / +PB Heal)</option>
+                        <option value="Misty Terrain">Misty (No Status / Dragon Disadv)</option>
+                        <option value="Psychic Terrain">Psychic (No Reactions / +PB Psychic Dmg)</option>
+                    </select>
+                </div>
+            </div>
         </div>
+        <div id="env-effect-banner" class="hidden bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow flex items-center justify-between"></div>
     </div>
 
     <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 hidden">
         
-        <!-- GM WILD ENCOUNTER & CATCH DC CALCULATOR PANEL (Powered by Jufinda/poke5e) -->
+        <!-- GM WILD ENCOUNTER, BIOME FILTER & CATCH DC CALCULATOR PANEL -->
         <section id="encounter-panel" class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white rounded-2xl shadow-xl p-5 border-l-8 border-l-yellow-400 hidden">
             <div class="flex justify-between items-center mb-4">
                 <div>
                     <h2 class="text-lg font-extrabold flex items-center gap-2">
-                        🌿 GM Wild Encounter Spawner & Catch Calculator
-                        <span class="text-[10px] bg-indigo-700 text-indigo-200 px-2 py-0.5 rounded-full uppercase font-semibold">Live Repo Data</span>
+                        🌿 GM Wild Encounter Spawner, Biome Filter & Catch Calculator
+                        <span class="text-[10px] bg-indigo-700 text-indigo-200 px-2 py-0.5 rounded-full uppercase font-semibold">Supplements: Biomes & Catching Rules</span>
                     </h2>
-                    <p class="text-xs text-indigo-200">Filter by Species Rating (SR) & Type from your forked repo, roll stats, calculate Catch DC, or assign directly to a Trainer.</p>
+                    <p class="text-xs text-indigo-200">Filter by Biome, Species Rating (SR), & Type from your forked repo, roll Natures & Shiny chance (1%), and calculate exact Pokéball Capture DC.</p>
                 </div>
                 <button onclick="toggleEncounterPanel()" class="text-indigo-300 hover:text-white text-sm font-bold">✖ Close</button>
             </div>
@@ -127,7 +221,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
                 <!-- Spawner Filters -->
                 <div class="lg:col-span-5 bg-white/10 rounded-xl p-3.5 space-y-3 border border-white/15">
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div>
                             <label class="block text-[10px] font-bold uppercase text-indigo-200 mb-1">Elemental Type</label>
                             <select id="enc-type" class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-xs text-white font-semibold">
@@ -141,13 +235,27 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-[10px] font-bold uppercase text-indigo-200 mb-1">Biome / Habitat</label>
+                            <select id="enc-biome" class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-xs text-white font-semibold">
+                                <option value="any">Any Biome</option>
+                                <option value="forest">Forest</option>
+                                <option value="grassland">Grassland</option>
+                                <option value="mountain">Mountain</option>
+                                <option value="cave">Cave / Subterranean</option>
+                                <option value="ocean">Ocean / Water</option>
+                                <option value="urban">Urban / City</option>
+                                <option value="desert">Desert / Arid</option>
+                                <option value="tundra">Tundra / Snowy</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-[10px] font-bold uppercase text-indigo-200 mb-1">Max SR</label>
                             <select id="enc-sr" class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-xs text-white font-semibold">
-                                <option value="0.5">SR ≤ 1/2 (Starter)</option>
-                                <option value="2">SR ≤ 2 (Early)</option>
-                                <option value="5" selected>SR ≤ 5 (Mid)</option>
-                                <option value="10">SR ≤ 10 (High)</option>
-                                <option value="99">Any SR (All)</option>
+                                <option value="0.5">SR ≤ 1/2</option>
+                                <option value="2">SR ≤ 2</option>
+                                <option value="5" selected>SR ≤ 5</option>
+                                <option value="10">SR ≤ 10</option>
+                                <option value="99">Any SR</option>
                             </select>
                         </div>
                         <div>
@@ -177,7 +285,7 @@
                 <div class="md:w-1/3">
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="text-sm font-extrabold text-gray-800 uppercase tracking-wider flex items-center gap-1">
-                            🎲 Dice Roller
+                            🎲 Dice & Contest Roller
                         </h2>
                         <div class="flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded border border-gray-200">
                             <label class="font-bold text-xs text-gray-600">Mod:</label>
@@ -198,7 +306,7 @@
                 <div class="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-3 h-36 flex flex-col relative">
                     <h3 class="text-[11px] font-bold text-gray-500 uppercase mb-1.5 flex justify-between">
                         <span>Live Session & Combat Log</span>
-                        <span class="text-[10px] text-gray-400 font-normal">Click any Pokémon Move to roll attacks directly here!</span>
+                        <span class="text-[10px] text-gray-400 font-normal">Includes STAB, Bonds, Natures, Weather & Terrain math!</span>
                     </h3>
                     <ul id="dice-log" class="flex-1 overflow-y-auto text-xs space-y-1.5 font-mono pr-1">
                         <li class="text-gray-400 italic">Rolls, move attacks, and events will appear here...</li>
@@ -217,7 +325,7 @@
         <div id="app"></div>
     </main>
 
-    <!-- MOVE / ABILITY / ITEM INSPECTOR & DICE ROLLER MODAL -->
+    <!-- MOVE / ABILITY / ITEM / STATUS INSPECTOR & DICE ROLLER MODAL -->
     <div id="inspector-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border-t-8 border-blue-600 animate-fadeIn">
             <div class="bg-gray-900 text-white px-5 py-3 flex justify-between items-center">
@@ -236,13 +344,13 @@
         </div>
     </div>
 
-    <!-- FORKED COMPENDIUM QUICK-SEARCH MODAL (Pokémon, Moves, Items, Abilities) -->
+    <!-- FORKED COMPENDIUM QUICK-SEARCH MODAL (Pokémon, Moves, TMs, Items, Abilities) -->
     <div id="compendium-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border-t-8 border-yellow-400 flex flex-col max-h-[85vh]">
             <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
                 <div>
                     <h3 class="text-lg font-extrabold flex items-center gap-2">📖 Forked Compendium Lookup (Jufinda/poke5e)</h3>
-                    <p class="text-xs text-gray-400">Instantly search all Pokémon, Moves, Items, and Abilities loaded from your GitHub fork.</p>
+                    <p class="text-xs text-gray-400">Instantly search all Pokémon, Moves, TMs, Items, and Abilities loaded from your GitHub fork.</p>
                 </div>
                 <button onclick="closeCompendiumModal()" class="text-gray-400 hover:text-white font-bold text-xl">✖</button>
             </div>
@@ -250,12 +358,55 @@
                 <select id="comp-category" onchange="renderCompendiumSearch()" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-gray-800">
                     <option value="pokemon">Pokémon</option>
                     <option value="moves">Moves</option>
+                    <option value="tms">TMs (Technical Machines)</option>
                     <option value="items">Items</option>
                     <option value="abilities">Abilities</option>
                 </select>
-                <input type="text" id="comp-search" oninput="renderCompendiumSearch()" placeholder="Search by name, type, or effect..." class="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+                <input type="text" id="comp-search" oninput="renderCompendiumSearch()" placeholder="Search by name, number, type, or effect..." class="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
             </div>
             <div id="comp-results" class="p-4 overflow-y-auto space-y-2.5 flex-1 bg-gray-50"></div>
+        </div>
+    </div>
+
+    <!-- COMPLETE POKÉ5E RULES & STATUS CHEAT SHEET MODAL -->
+    <div id="rules-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden border-t-8 border-amber-500 flex flex-col max-h-[85vh]">
+            <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-extrabold">📜 Poké5e Core Rules, Status Conditions, Natures & Bonds Reference</h3>
+                    <p class="text-xs text-gray-400">Quick table reference for all 31 sections of poke5e.app/rules</p>
+                </div>
+                <button onclick="closeRulesCheatModal()" class="text-gray-400 hover:text-white font-bold text-xl">✖</button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-5 text-xs text-gray-700 bg-gray-50">
+                <div>
+                    <h4 class="font-extrabold text-sm text-gray-900 uppercase mb-2 border-b pb-1">⚡ Status Conditions (Appendix)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2" id="rules-status-grid"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-3.5 rounded-xl border border-gray-200">
+                        <h4 class="font-extrabold text-sm text-gray-900 uppercase mb-2">❤️ Loyalty & Bonds (-3 to +3)</h4>
+                        <ul class="space-y-1">
+                            <li><strong>+3 Bond:</strong> +2 to Saving Throws, +1 to Attack Rolls, immune to charm/frighten while Trainer is conscious.</li>
+                            <li><strong>+2 Bond:</strong> +1 to Saving Throws and +1 to Attack Rolls.</li>
+                            <li><strong>+1 Bond:</strong> +1 to Saving Throws.</li>
+                            <li><strong>0 Bond:</strong> Neutral loyalty (No bonus or penalty).</li>
+                            <li><strong>-1 Bond:</strong> Disadvantage on Loyalty/Obedience checks.</li>
+                            <li><strong>-2 Bond:</strong> -1 to Attack Rolls; may ignore commands on failed CHA check.</li>
+                            <li><strong>-3 Bond:</strong> Disobeys commands in combat unless Trainer succeeds DC 15 Animal Handling.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-xl border border-gray-200">
+                        <h4 class="font-extrabold text-sm text-gray-900 uppercase mb-2">🏕️ Resting, Fainting & Transformation Rules</h4>
+                        <ul class="space-y-1">
+                            <li><strong>Short Rest (1 hr):</strong> Spend Hit Dice (up to Level) + CON mod to heal HP.</li>
+                            <li><strong>Long Rest (8 hrs) / Pokécenter:</strong> Restores 100% HP, 100% Move PP, and cures non-permanent Status Conditions.</li>
+                            <li><strong>STAB (Same-Type Attack Bonus):</strong> Adds Proficiency Bonus (+2 to +6) to damage when Move Type matches Pokémon Type.</li>
+                            <li><strong>Mega / Z-Move / Dynamax / Terastal:</strong> Once per Long Rest transformation; Tera grants STAB on chosen Tera Type.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -277,7 +428,7 @@
         <span id="toast-text" class="font-semibold text-xs">Synced Live</span>
     </div>
 
-    <!-- FIREBASE AND FORKED REPOSITORY LOGIC -->
+    <!-- FIREBASE AND COMPLETE POKÉ5E REPOSITORY LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -312,6 +463,8 @@
             moves: [],
             movesByName: new Map(),
             movesById: new Map(),
+            tms: [],
+            tmsByName: new Map(),
             items: [],
             itemsByName: new Map(),
             abilities: [],
@@ -341,13 +494,103 @@
             fairy: "bg-rose-400 text-white"
         };
 
-        const NATURES = [
-            "Hardy", "Lonely", "Brave", "Adamant", "Naughty",
-            "Bold", "Docile", "Relaxed", "Impish", "Lax",
-            "Timid", "Hasty", "Serious", "Jolly", "Naive",
-            "Modest", "Mild", "Quiet", "Bashful", "Rash",
-            "Calm", "Gentle", "Sassy", "Careful", "Quirky"
-        ];
+        // Complete 18-Type Defensive Effectiveness Matrix (AttackType -> DefendType -> Multiplier)
+        const ALL_TYPES = ["normal","fire","water","grass","electric","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
+        const TYPE_CHART = {
+            normal:   { rock: 0.5, ghost: 0, steel: 0.5 },
+            fire:     { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
+            water:    { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
+            grass:    { fire: 0.5, water: 2, grass: 0.5, poison: 0.5, ground: 2, flying: 0.5, bug: 0.5, rock: 2, dragon: 0.5, steel: 0.5 },
+            electric: { water: 2, grass: 0.5, electric: 0.5, ground: 0, flying: 2, dragon: 0.5 },
+            ice:      { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
+            fighting: { normal: 2, ice: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 2, ghost: 0, dark: 2, steel: 2, fairy: 0.5 },
+            poison:   { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
+            ground:   { fire: 2, grass: 0.5, electric: 2, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
+            flying:   { grass: 2, electric: 0.5, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
+            psychic:  { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
+            bug:      { fire: 0.5, grass: 2, fighting: 0.5, poison: 0.5, flying: 0.5, psychic: 2, ghost: 0.5, dark: 2, steel: 0.5, fairy: 0.5 },
+            rock:     { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
+            ghost:    { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
+            dragon:   { dragon: 2, steel: 0.5, fairy: 0 },
+            dark:     { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
+            steel:    { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
+            fairy:    { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 }
+        };
+
+        function computeDefensiveMatchups(defTypes) {
+            if (!Array.isArray(defTypes) || defTypes.length === 0) return { weak: [], resist: [], immune: [] };
+            const weak = [], resist = [], immune = [];
+            ALL_TYPES.forEach(atk => {
+                let mult = 1;
+                defTypes.forEach(def => {
+                    const d = def.toLowerCase();
+                    if (TYPE_CHART[atk] && TYPE_CHART[atk][d] !== undefined) {
+                        mult *= TYPE_CHART[atk][d];
+                    }
+                });
+                if (mult === 0) immune.push(`${atk.toUpperCase()} (0x)`);
+                else if (mult > 1) weak.push(`${atk.toUpperCase()} (${mult}x)`);
+                else if (mult < 1) resist.push(`${atk.toUpperCase()} (${mult === 0.5 ? '½' : '¼'}x)`);
+            });
+            return { weak, resist, immune };
+        }
+
+        // Poké5e Official Natures (+2 / -2 Ability Score Modifiers)
+        const NATURES_DATA = {
+            "Hardy":   { plus: null, minus: null, label: "Hardy (Neutral)" },
+            "Lonely":  { plus: "str", minus: "con", label: "Lonely (+2 STR, -2 CON)" },
+            "Brave":   { plus: "str", minus: "dex", label: "Brave (+2 STR, -2 DEX)" },
+            "Adamant": { plus: "str", minus: "int", label: "Adamant (+2 STR, -2 INT)" },
+            "Naughty": { plus: "str", minus: "wis", label: "Naughty (+2 STR, -2 WIS)" },
+            "Bold":    { plus: "con", minus: "str", label: "Bold (+2 CON, -2 STR)" },
+            "Docile":  { plus: null, minus: null, label: "Docile (Neutral)" },
+            "Relaxed": { plus: "con", minus: "dex", label: "Relaxed (+2 CON, -2 DEX)" },
+            "Impish":  { plus: "con", minus: "int", label: "Impish (+2 CON, -2 INT)" },
+            "Lax":     { plus: "con", minus: "wis", label: "Lax (+2 CON, -2 WIS)" },
+            "Timid":   { plus: "dex", minus: "str", label: "Timid (+2 DEX, -2 STR)" },
+            "Hasty":   { plus: "dex", minus: "con", label: "Hasty (+2 DEX, -2 CON)" },
+            "Serious": { plus: null, minus: null, label: "Serious (Neutral)" },
+            "Jolly":   { plus: "dex", minus: "int", label: "Jolly (+2 DEX, -2 INT)" },
+            "Naive":   { plus: "dex", minus: "wis", label: "Naive (+2 DEX, -2 WIS)" },
+            "Modest":  { plus: "int", minus: "str", label: "Modest (+2 INT, -2 STR)" },
+            "Mild":    { plus: "int", minus: "con", label: "Mild (+2 INT, -2 CON)" },
+            "Quiet":   { plus: "int", minus: "dex", label: "Quiet (+2 INT, -2 DEX)" },
+            "Bashful": { plus: null, minus: null, label: "Bashful (Neutral)" },
+            "Rash":    { plus: "int", minus: "wis", label: "Rash (+2 INT, -2 WIS)" },
+            "Calm":    { plus: "wis", minus: "str", label: "Calm (+2 WIS, -2 STR)" },
+            "Gentle":  { plus: "wis", minus: "con", label: "Gentle (+2 WIS, -2 CON)" },
+            "Sassy":   { plus: "wis", minus: "dex", label: "Sassy (+2 WIS, -2 DEX)" },
+            "Careful": { plus: "wis", minus: "int", label: "Careful (+2 WIS, -2 INT)" },
+            "Quirky":  { plus: null, minus: null, label: "Quirky (Neutral)" }
+        };
+        const NATURES = Object.keys(NATURES_DATA);
+
+        // Poké5e Official Status Condition Rules (Appendix)
+        const STATUS_RULES = {
+            "Normal": "No active status penalties.",
+            "Burned": "Takes fire damage equal to Proficiency Bonus at the end of each of its turns. Deals half damage on STR-based move attacks. Fire-types are immune.",
+            "Paralyzed": "Movement speed is halved. At the start of its turn, roll a d4: on a 1, the Pokémon is incapacitated until the start of its next turn. Electric-types are immune.",
+            "Poisoned": "Disadvantage on Attack Rolls and Ability Checks. Takes poison damage equal to Proficiency Bonus at the end of each of its turns. Poison and Steel-types are immune.",
+            "Badly Poisoned": "Disadvantage on Attack Rolls and Ability Checks. Takes 2x Proficiency Bonus poison damage at the end of each of its turns. Poison/Steel immune.",
+            "Asleep": "Incapacitated, cannot move or speak, automatically fails STR and DEX saves. Attacks against it have Advantage. Roll d20 at end of turn (11+ wakes up) or wake upon taking damage.",
+            "Frozen": "Incapacitated, speed 0, fails STR/DEX saves, attacks against have Advantage. End of turn: roll d20 (16+ thaws out), or thaws immediately if hit by a Fire-type move.",
+            "Confused": "Before using a move, roll a d6: on 1-3, the move fails and the Pokémon takes 1d6 + STR mod typeless damage. Ends after 3 turns or when switched out.",
+            "Flinch": "Disadvantage on all attack rolls and cannot use Reactions until the end of its next turn.",
+            "Fainted": "0 Hit Points. Unconscious and out of combat until healed at a Pokécenter, via Revive, or Long Rest."
+        };
+        const statusConditions = Object.keys(STATUS_RULES);
+
+        // Populate Rules Cheat Sheet Grid
+        setTimeout(() => {
+            const grid = document.getElementById('rules-status-grid');
+            if (grid) {
+                grid.innerHTML = Object.entries(STATUS_RULES).filter(([k]) => k !== 'Normal').map(([k, v]) => `
+                    <div class="bg-white p-2.5 rounded-lg border border-gray-200">
+                        <strong class="text-red-700">${k}:</strong> <span>${v}</span>
+                    </div>
+                `).join('');
+            }
+        }, 200);
 
         async function fetchJsonWithFallback(filename) {
             try {
@@ -363,17 +606,27 @@
         async function loadForkedDatabase() {
             const badge = document.getElementById('db-status-badge');
             try {
-                const [pokeData, moveData, itemData, abilityData] = await Promise.all([
+                const [pokeData, moveData, itemData, abilityData, tmData] = await Promise.all([
                     fetchJsonWithFallback('pokemon.json'),
                     fetchJsonWithFallback('moves.json'),
                     fetchJsonWithFallback('items.json'),
-                    fetchJsonWithFallback('abilities.json')
+                    fetchJsonWithFallback('abilities.json'),
+                    fetchJsonWithFallback('tms.json').catch(() => ({ tms: [] }))
                 ]);
 
                 poke5eDB.pokemon = pokeData.items || pokeData.pokemon || (Array.isArray(pokeData) ? pokeData : []);
                 poke5eDB.moves = moveData.moves || moveData.items || (Array.isArray(moveData) ? moveData : []);
                 poke5eDB.items = itemData.items || (Array.isArray(itemData) ? itemData : []);
                 poke5eDB.abilities = abilityData.abilities || abilityData.items || (Array.isArray(abilityData) ? abilityData : []);
+                poke5eDB.tms = tmData.tms || tmData.items || (Array.isArray(tmData) ? tmData : []);
+
+                // Index Moves first so TMs can reference move names
+                const moveListEl = document.getElementById('moves-datalist');
+                moveListEl.innerHTML = poke5eDB.moves.map(m => {
+                    poke5eDB.movesById.set(m.id.toLowerCase(), m);
+                    poke5eDB.movesByName.set(m.name.toLowerCase(), m);
+                    return `<option value="${m.name}">${m.type.toUpperCase()} | PP: ${m.pp} | ${m.time}</option>`;
+                }).join('');
 
                 // Index Pokémon
                 const pokeListEl = document.getElementById('pokemon-datalist');
@@ -383,13 +636,17 @@
                     return `<option value="${p.name}">#${p.number} (${(p.type || []).join('/')}) - SR ${p.sr}</option>`;
                 }).join('');
 
-                // Index Moves
-                const moveListEl = document.getElementById('moves-datalist');
-                moveListEl.innerHTML = poke5eDB.moves.map(m => {
-                    poke5eDB.movesById.set(m.id.toLowerCase(), m);
-                    poke5eDB.movesByName.set(m.name.toLowerCase(), m);
-                    return `<option value="${m.name}">${m.type.toUpperCase()} | PP: ${m.pp} | ${m.time}</option>`;
-                }).join('');
+                // Index TMs
+                const tmListEl = document.getElementById('tms-datalist');
+                if (tmListEl && poke5eDB.tms.length > 0) {
+                    tmListEl.innerHTML = poke5eDB.tms.map(tm => {
+                        const moveObj = poke5eDB.movesById.get(String(tm.move || tm.id).toLowerCase());
+                        const moveName = moveObj ? moveObj.name : (tm.move || tm.id);
+                        const label = `TM${String(tm.id).padStart(2, '0')} - ${moveName}`;
+                        poke5eDB.tmsByName.set(label.toLowerCase(), { ...tm, moveName, moveObj });
+                        return `<option value="${moveName}">${label} (₽${tm.cost || 1000})</option>`;
+                    }).join('');
+                }
 
                 // Index Items
                 const itemListEl = document.getElementById('items-datalist');
@@ -409,7 +666,7 @@
                 poke5eDB.loaded = true;
                 if (badge) {
                     badge.className = "bg-emerald-900/60 border border-emerald-400/40 px-2 py-0.5 rounded text-emerald-200";
-                    badge.innerText = `✓ ${poke5eDB.pokemon.length} Pokémon • ${poke5eDB.moves.length} Moves • ${poke5eDB.items.length} Items`;
+                    badge.innerText = `✓ ${poke5eDB.pokemon.length} Pokémon • ${poke5eDB.moves.length} Moves • ${poke5eDB.tms.length} TMs • ${poke5eDB.items.length} Items`;
                 }
                 if (currentRoomCode) render();
             } catch (err) {
@@ -421,21 +678,19 @@
             }
         }
 
-        // Start loading forked repo data immediately on boot
         loadForkedDatabase();
 
         // === SESSION STATE ===
         let appState = [];
         let diceLog = [];
         let sessionPlayers = [];
+        let battlefieldEnv = { weather: "Clear", terrain: "Normal" };
         let autoSaveTimeout = null;
         let currentRoomCode = null;
         let isSyncing = false; 
         let localPlayerName = "Traveler"; 
         let isGameMaster = false;
         let currentWildEncounter = null;
-
-        const statusConditions = ["Normal", "Burned", "Paralyzed", "Poisoned", "Asleep", "Frozen", "Confused", "Flinch", "Badly Poisoned", "Fainted"];
 
         setTimeout(() => {
             const savedName = localStorage.getItem('poke5e_player_name');
@@ -453,9 +708,32 @@
             }
         }
 
+        // === POKÉ5E CORE MATH HELPERS ===
         function getProficiencyBonus(level) {
             const lvl = Math.max(1, parseInt(level) || 1);
             return Math.floor((lvl - 1) / 4) + 2;
+        }
+
+        // Trainer Leveling Rules: Pokéslots & Max Control SR
+        function getTrainerMaxPokeslots(level, path) {
+            const lvl = Math.max(1, parseInt(level) || 1);
+            let slots = 3;
+            if (lvl >= 15) slots = 6;
+            else if (lvl >= 10) slots = 5;
+            else if (lvl >= 5) slots = 4;
+            if (path && path.toLowerCase().includes('collector')) slots = Math.min(6, slots + 1);
+            return slots;
+        }
+
+        function getTrainerMaxSR(level) {
+            const lvl = Math.max(1, parseInt(level) || 1);
+            if (lvl >= 17) return 15;
+            if (lvl >= 14) return 12;
+            if (lvl >= 11) return 10;
+            if (lvl >= 8) return 8;
+            if (lvl >= 6) return 6;
+            if (lvl >= 3) return 5;
+            return 2;
         }
 
         function getMod(score) {
@@ -502,7 +780,8 @@
                 await setDoc(doc(db, "rooms", code), { 
                     trainers: [getNewTrainer()], 
                     diceLog: initialLog,
-                    players: [`👑 ${localPlayerName} (GM)`]
+                    players: [`👑 ${localPlayerName} (GM)`],
+                    environment: battlefieldEnv
                 });
                 joinRoom(code, true);
             } catch(e) {
@@ -533,7 +812,7 @@
                     document.getElementById('active-game-header').classList.remove('hidden');
                     document.getElementById('main-content').classList.remove('hidden');
                     document.getElementById('display-room-code').innerText = code;
-                    document.getElementById('display-role').innerText = isGameMaster ? "Game Master (Full Control)" : "Player (Read-Only Sheet / Live Roller)";
+                    document.getElementById('display-role').innerText = isGameMaster ? "Game Master (Full Control)" : "Player (Live Roller)";
                     
                     if (isGameMaster) {
                         document.getElementById('add-trainer-btn').classList.remove('hidden');
@@ -541,11 +820,16 @@
                         document.getElementById('export-btn').classList.remove('hidden');
                         document.getElementById('import-label').classList.remove('hidden');
                         document.getElementById('encounter-toggle-btn').classList.remove('hidden');
+                        document.getElementById('party-rest-btn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('global-weather-select').disabled = true;
+                        document.getElementById('global-terrain-select').disabled = true;
                     }
 
                     appState = roomSnap.data().trainers || [];
                     diceLog = roomSnap.data().diceLog || [];
                     sessionPlayers = roomSnap.data().players || [];
+                    battlefieldEnv = roomSnap.data().environment || { weather: "Clear", terrain: "Normal" };
                     
                     const playerTag = isGameMaster ? `👑 ${localPlayerName} (GM)` : `🛡️ ${localPlayerName}`;
                     if (!sessionPlayers.includes(playerTag)) {
@@ -561,6 +845,8 @@
                             appState = snapshot.data().trainers || [];
                             diceLog = snapshot.data().diceLog || [];
                             sessionPlayers = snapshot.data().players || [];
+                            battlefieldEnv = snapshot.data().environment || { weather: "Clear", terrain: "Normal" };
+                            renderEnvironmentBanner();
                             render();
                             renderDiceLog();
                             renderPlayers();
@@ -584,7 +870,8 @@
             setDoc(doc(db, "rooms", currentRoomCode), { 
                 trainers: appState, 
                 diceLog: diceLog,
-                players: sessionPlayers 
+                players: sessionPlayers,
+                environment: battlefieldEnv
             });
             if (!silent) displayToast();
         }
@@ -594,7 +881,8 @@
             setDoc(doc(db, "rooms", currentRoomCode), { 
                 trainers: appState, 
                 diceLog: diceLog, 
-                players: sessionPlayers 
+                players: sessionPlayers,
+                environment: battlefieldEnv
             }, { merge: true });
         }
 
@@ -603,7 +891,50 @@
             autoSaveTimeout = setTimeout(() => saveData(true), 500);
         }
 
-        // === POKÉMON & MOVE AUTO-FILL FROM Jufinda/poke5e ===
+        // === WEATHER & TERRAIN ENVIRONMENT LOGIC ===
+        window.updateEnvironment = function(key, val) {
+            if (!isGameMaster) return;
+            battlefieldEnv[key] = val;
+            diceLog.push(`<span class="text-amber-600 font-bold">🌍 Battlefield ${key.toUpperCase()} changed to: <strong>${val}</strong>!</span>`);
+            if (diceLog.length > 40) diceLog.shift();
+            renderEnvironmentBanner();
+            saveData(true);
+        }
+
+        function renderEnvironmentBanner() {
+            const wSel = document.getElementById('global-weather-select');
+            const tSel = document.getElementById('global-terrain-select');
+            if (wSel) wSel.value = battlefieldEnv.weather || "Clear";
+            if (tSel) tSel.value = battlefieldEnv.terrain || "Normal";
+
+            const banner = document.getElementById('env-effect-banner');
+            if (!banner) return;
+            const activeEffects = [];
+            if (battlefieldEnv.weather && battlefieldEnv.weather !== "Clear") {
+                activeEffects.push(`☀️ Weather: ${battlefieldEnv.weather}`);
+            }
+            if (battlefieldEnv.terrain && battlefieldEnv.terrain !== "Normal") {
+                activeEffects.push(`🌱 Terrain: ${battlefieldEnv.terrain}`);
+            }
+            if (activeEffects.length === 0) {
+                banner.classList.add('hidden');
+            } else {
+                banner.classList.remove('hidden');
+                banner.innerHTML = `<span>⚡ Active Battlefield Rules: ${activeEffects.join('  •  ')}</span><span class="text-[10px] uppercase bg-black/20 px-2 py-0.5 rounded">Applied to Move Rolls</span>`;
+            }
+        }
+
+        // === POKÉMON, NATURES & MOVE AUTO-FILL FROM Jufinda/poke5e ===
+        function applyNatureModifiersToAttributes(baseAttrs, natureName) {
+            const out = { ...(baseAttrs || { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }) };
+            const nat = NATURES_DATA[natureName];
+            if (nat && nat.plus && nat.minus && nat.plus !== nat.minus) {
+                out[nat.plus] = Math.min(30, (parseInt(out[nat.plus]) || 10) + 2);
+                out[nat.minus] = Math.max(1, (parseInt(out[nat.minus]) || 10) - 2);
+            }
+            return out;
+        }
+
         function populatePokemonFromRepo(pokeObj, repoData, targetLevel = null) {
             const lvl = targetLevel || parseInt(pokeObj.level) || repoData.minLevel || 1;
             pokeObj.species = repoData.name;
@@ -613,10 +944,12 @@
             pokeObj.hitDice = repoData.hitDice || "d6";
             pokeObj.ac = repoData.ac || 12;
             pokeObj.sprite = repoData.media?.main || repoData.media?.sprite || "";
+            if (!pokeObj.nature) pokeObj.nature = "Hardy";
 
-            // Attributes
+            // Save raw base attributes & apply Nature (+2/-2)
             if (repoData.attributes) {
-                pokeObj.attributes = { ...repoData.attributes };
+                pokeObj.baseAttributes = { ...repoData.attributes };
+                pokeObj.attributes = applyNatureModifiersToAttributes(repoData.attributes, pokeObj.nature);
             }
 
             // Calculate scaled HP if leveled above minLevel
@@ -711,7 +1044,86 @@
             displayCustomToast("✨", `Evolved into ${nextRepo.name}!`);
         }
 
-        // === INTERACTIVE MOVE / ABILITY / ITEM INSPECTOR & ONE-CLICK ROLLER ===
+        window.toggleShiny = function(tIndex, pIndex) {
+            if (!isGameMaster) return;
+            const poke = appState[tIndex].pokemon[pIndex];
+            poke.shiny = !poke.shiny;
+            saveData(true);
+            render();
+            displayCustomToast("✨", poke.shiny ? `${poke.species || 'Pokémon'} is now SHINY!` : "Shiny status removed.");
+        }
+
+        // === FAINTING, RESTING, AND HEALING RULES (Long Rest / Pokécenter / Short Rest Hit Dice) ===
+        window.partyPokecenterRest = function() {
+            if (!isGameMaster) return;
+            appState.forEach(tr => {
+                tr.hpCurr = tr.hpMax;
+                (tr.pokemon || []).forEach(pk => {
+                    pk.hpCurr = pk.hpMax;
+                    pk.status = 'Normal';
+                    (pk.moves || []).forEach(mv => { mv.ppCurr = mv.ppMax; });
+                });
+            });
+            diceLog.push(`<span class="text-pink-600 font-bold">🏥 Ding-dong-ding-dong! The entire party took a <strong>Pokécenter / Long Rest</strong>! All HP, Move PP, and Status Conditions restored!</span>`);
+            if (diceLog.length > 40) diceLog.shift();
+            saveData(true);
+            render();
+            displayCustomToast("🏥", "Party Fully Restored!");
+        }
+
+        window.trainerLongRest = function(tIndex) {
+            if (!isGameMaster) return;
+            const tr = appState[tIndex];
+            tr.hpCurr = tr.hpMax;
+            (tr.pokemon || []).forEach(pk => {
+                pk.hpCurr = pk.hpMax;
+                pk.status = 'Normal';
+                (pk.moves || []).forEach(mv => { mv.ppCurr = mv.ppMax; });
+            });
+            diceLog.push(`<span class="text-pink-600 font-bold">🏥 <strong>${tr.name || 'Trainer'}</strong> completed a Long Rest! Full HP, PP & Status restored.</span>`);
+            if (diceLog.length > 40) diceLog.shift();
+            saveData(true);
+            render();
+            displayCustomToast("🏥", `${tr.name || 'Trainer'} Fully Healed!`);
+        }
+
+        window.pokemonShortRestHitDie = function(tIndex, pIndex) {
+            const pk = appState[tIndex].pokemon[pIndex];
+            const dieSides = parseInt((pk.hitDice || "d6").replace('d', '')) || 6;
+            const conMod = getMod(pk.attributes?.con || 10);
+            const roll = Math.floor(Math.random() * dieSides) + 1;
+            const healAmount = Math.max(1, roll + conMod);
+            const oldHp = parseInt(pk.hpCurr) || 0;
+            const newHp = Math.min(parseInt(pk.hpMax) || 15, oldHp + healAmount);
+
+            if (isGameMaster) {
+                pk.hpCurr = newHp;
+            }
+            diceLog.push(`<span class="text-emerald-700 font-bold">⛺ Short Rest: <strong>${pk.species || 'Pokémon'}</strong> spent 1 Hit Die (${pk.hitDice || 'd6'}: ${roll} + CON: ${conMod}) and healed <strong>+${healAmount} HP</strong> (${oldHp} → ${newHp})!</span>`);
+            if (diceLog.length > 40) diceLog.shift();
+            if (isGameMaster) {
+                saveData(true);
+                render();
+            } else {
+                pushLogAndPlayers();
+            }
+            displayCustomToast("⛺", `Healed +${healAmount} HP!`);
+        }
+
+        // === INTERACTIVE MOVE / ABILITY / ITEM / STATUS INSPECTOR & ROLLER ===
+        window.inspectStatus = function(statusName) {
+            const ruleText = STATUS_RULES[statusName] || "No special rules.";
+            const modal = document.getElementById('inspector-modal');
+            document.getElementById('insp-badge').className = "text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded bg-red-600 text-white";
+            document.getElementById('insp-badge').innerText = "STATUS CONDITION";
+            document.getElementById('insp-title').innerText = statusName;
+            document.getElementById('insp-meta').innerHTML = `<div class="col-span-4 text-gray-600 font-semibold">Poké5e Official Status Condition Effect</div>`;
+            document.getElementById('insp-desc').innerText = ruleText;
+            document.getElementById('insp-higher').classList.add('hidden');
+            document.getElementById('insp-actions').innerHTML = `<button onclick="closeInspectorModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-4 py-2 rounded-lg text-xs">Close</button>`;
+            modal.classList.remove('hidden');
+        }
+
         window.inspectMove = function(tIndex, pIndex, mIndex) {
             const poke = appState[tIndex].pokemon[pIndex];
             const moveSlot = poke.moves[mIndex];
@@ -758,7 +1170,6 @@
                 higher.classList.add('hidden');
             }
 
-            // Build Roll Attack & Damage Button
             actions.innerHTML = '';
             if (tIndex !== null && pIndex !== null) {
                 const rollBtn = document.createElement('button');
@@ -807,7 +1218,8 @@
         }
 
         function executeMoveRoll(tIndex, pIndex, mIndex, moveData) {
-            const poke = appState[tIndex].pokemon[pIndex];
+            const trainer = appState[tIndex];
+            const poke = trainer.pokemon[pIndex];
             const lvl = parseInt(poke.level) || 1;
             const pb = getProficiencyBonus(lvl);
 
@@ -825,13 +1237,42 @@
                 });
             }
 
+            // Bond Bonus Rules (+2/+3 Bond grants +1 to Attack Rolls, -2/-3 grants -1)
+            const bondLvl = parseInt(poke.bond) || 0;
+            const bondAtkMod = bondLvl >= 2 ? 1 : (bondLvl <= -2 ? -1 : 0);
+
+            // Trainer Specialization / Ace Trainer Path Bonus
+            const specMatch = trainer.specialization && trainer.specialization !== 'None' && Array.isArray(poke.types) && poke.types.includes(trainer.specialization.toLowerCase());
+            const specAtkMod = specMatch ? 1 : 0;
+
             const atkRoll = Math.floor(Math.random() * 20) + 1;
-            const atkTotal = atkRoll + pb + bestMod;
+            const atkTotal = atkRoll + pb + bestMod + bondAtkMod + specAtkMod;
             const saveDC = 8 + pb + bestMod;
 
-            // Check STAB
-            const isStab = Array.isArray(poke.types) && poke.types.includes(moveData.type);
+            // Check STAB (includes Terastal / Transformation type override if active)
+            const isStab = (Array.isArray(poke.types) && poke.types.includes(moveData.type)) || (poke.teraType && poke.teraType.toLowerCase() === moveData.type);
             const stabBonus = isStab ? pb : 0;
+
+            // Check Weather & Terrain Modifiers
+            let envNotes = [];
+            let envDmgBonus = 0;
+            if (battlefieldEnv.weather === "Harsh Sunlight") {
+                if (moveData.type === "fire") envNotes.push("☀️ Sun (Adv)");
+                if (moveData.type === "water") envNotes.push("☀️ Sun (Disadv)");
+            } else if (battlefieldEnv.weather === "Rain") {
+                if (moveData.type === "water") envNotes.push("🌧️ Rain (Adv)");
+                if (moveData.type === "fire") envNotes.push("🌧️ Rain (Disadv)");
+            }
+            if (battlefieldEnv.terrain === "Electric Terrain" && moveData.type === "electric") {
+                envDmgBonus += pb;
+                envNotes.push(`⚡Terrain(+${pb})`);
+            } else if (battlefieldEnv.terrain === "Grassy Terrain" && moveData.type === "grass") {
+                envDmgBonus += pb;
+                envNotes.push(`🌱Terrain(+${pb})`);
+            } else if (battlefieldEnv.terrain === "Psychic Terrain" && moveData.type === "psychic") {
+                envDmgBonus += pb;
+                envNotes.push(`🔮Terrain(+${pb})`);
+            }
 
             // Parse & roll damage dice if applicable
             const dmgDiceStr = parseDamageDiceForLevel(moveData, lvl);
@@ -847,16 +1288,21 @@
                     rolls.push(r);
                     sum += r;
                 }
-                const totalDmg = sum + bestMod + stabBonus;
+                let totalDmg = sum + bestMod + stabBonus + envDmgBonus;
+                // Burned Rule: Half damage on STR moves
+                if (poke.status === "Burned" && chosenStat === "STR") {
+                    totalDmg = Math.floor(totalDmg / 2);
+                    envNotes.push("🔥Burned (½ STR Dmg)");
+                }
                 dmgResultHtml = ` | 💥 Dmg (${dmgDiceStr}+${bestMod}${isStab ? `+${stabBonus} STAB` : ''}): <strong>${totalDmg}</strong> [${rolls.join(',')}]`;
             }
 
-            // Deduct 1 PP if GM
             if (isGameMaster && poke.moves[mIndex] && poke.moves[mIndex].ppCurr > 0) {
                 poke.moves[mIndex].ppCurr = Math.max(0, poke.moves[mIndex].ppCurr - 1);
             }
 
-            const logEntry = `<span class="text-gray-900 font-bold">${localPlayerName}</span> (${poke.species || 'Pokémon'}) used <strong class="text-blue-700">${moveData.name}</strong>! 🎯 Atk: <strong>${atkTotal}</strong> (d20:${atkRoll}+PB:${pb}+${chosenStat}:${bestMod}) | Save DC: <strong>${saveDC}</strong>${dmgResultHtml}`;
+            const envTag = envNotes.length ? ` <span class="text-amber-700 font-bold">[${envNotes.join(', ')}]</span>` : '';
+            const logEntry = `<span class="text-gray-900 font-bold">${localPlayerName}</span> (${poke.shiny ? '✨' : ''}${poke.species || 'Pokémon'}) used <strong class="text-blue-700">${moveData.name}</strong>! 🎯 Atk: <strong>${atkTotal}</strong> (d20:${atkRoll}+PB:${pb}+${chosenStat}:${bestMod}${bondAtkMod ? `+Bond:${bondAtkMod}` : ''}${specAtkMod ? `+Spec:1` : ''}) | Save DC: <strong>${saveDC}</strong>${dmgResultHtml}${envTag}`;
             diceLog.push(logEntry);
             if (diceLog.length > 40) diceLog.shift();
 
@@ -928,7 +1374,14 @@
             document.getElementById('inspector-modal').classList.add('hidden');
         }
 
-        // === COMPENDIUM MODAL SEARCH ===
+        window.openRulesCheatModal = function() {
+            document.getElementById('rules-modal').classList.remove('hidden');
+        }
+        window.closeRulesCheatModal = function() {
+            document.getElementById('rules-modal').classList.add('hidden');
+        }
+
+        // === COMPENDIUM MODAL SEARCH (Includes TMs!) ===
         window.openCompendiumModal = function() {
             document.getElementById('compendium-modal').classList.remove('hidden');
             renderCompendiumSearch();
@@ -950,6 +1403,11 @@
             let list = poke5eDB[cat] || [];
             if (query) {
                 list = list.filter(entry => {
+                    if (cat === 'tms') {
+                        const mObj = poke5eDB.movesById.get(String(entry.move || entry.id).toLowerCase());
+                        const mName = mObj ? mObj.name.toLowerCase() : String(entry.move || '').toLowerCase();
+                        return mName.includes(query) || String(entry.id).includes(query);
+                    }
                     const nameMatch = entry.name?.toLowerCase().includes(query);
                     const typeMatch = Array.isArray(entry.type) ? entry.type.some(t => t.includes(query)) : (entry.type?.toLowerCase().includes(query));
                     return nameMatch || typeMatch;
@@ -993,6 +1451,24 @@
                             </div>
                             <button onclick="window.inspectMoveFromCompendium('${item.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-blue-200">Inspect / Roll</button>
                         </div>`;
+                } else if (cat === 'tms') {
+                    const moveObj = poke5eDB.movesById.get(String(item.move || item.id).toLowerCase());
+                    const mName = moveObj ? moveObj.name : (item.move || item.id);
+                    const mType = moveObj ? moveObj.type : 'normal';
+                    const tBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${TYPE_COLORS[mType] || 'bg-gray-500 text-white'}">${mType}</span>`;
+                    return `
+                        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between gap-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">TM${String(item.id).padStart(2, '0')}</span>
+                                    <strong class="text-sm text-gray-900">${mName}</strong>
+                                    ${tBadge}
+                                    <span class="text-xs font-bold text-emerald-700">${item.cost ? `₽${item.cost.toLocaleString()}` : ''}</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">${moveObj ? (Array.isArray(moveObj.description) ? moveObj.description[0] : moveObj.description) : ''}</p>
+                            </div>
+                            ${moveObj ? `<button onclick="window.inspectMoveFromCompendium('${moveObj.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-blue-200">Inspect Move</button>` : ''}
+                        </div>`;
                 } else if (cat === 'items') {
                     return `
                         <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between gap-3">
@@ -1023,7 +1499,7 @@
             }
         }
 
-        // === GM WILD ENCOUNTER SPAWNER & CATCH DC CALCULATOR ===
+        // === GM WILD ENCOUNTER SPAWNER (With Biome Filter & Shiny Roll) ===
         window.toggleEncounterPanel = function() {
             const panel = document.getElementById('encounter-panel');
             panel.classList.toggle('hidden');
@@ -1035,6 +1511,7 @@
                 return;
             }
             const typeFilter = document.getElementById('enc-type').value;
+            const biomeFilter = document.getElementById('enc-biome').value;
             const maxSr = parseFloat(document.getElementById('enc-sr').value) || 99;
             const wildLevel = Math.max(1, parseInt(document.getElementById('enc-level').value) || 3);
             const specificQuery = document.getElementById('enc-specific').value.trim();
@@ -1047,7 +1524,9 @@
                 const pool = poke5eDB.pokemon.filter(p => {
                     const srOk = (p.sr ?? 1) <= maxSr;
                     const typeOk = typeFilter === 'any' || (p.type && p.type.includes(typeFilter));
-                    return srOk && typeOk;
+                    const pBiomes = (p.biomes || p.habitat || []).map(b => String(b).toLowerCase());
+                    const biomeOk = biomeFilter === 'any' || pBiomes.length === 0 || pBiomes.some(b => b.includes(biomeFilter));
+                    return srOk && typeOk && biomeOk;
                 });
                 if (pool.length === 0) {
                     displayCustomToast("⚠️", "No Pokémon matched those exact filters.");
@@ -1057,11 +1536,12 @@
             }
 
             const tempPoke = getNewPokemon();
-            populatePokemonFromRepo(tempPoke, chosenRepo, wildLevel);
             tempPoke.nature = NATURES[Math.floor(Math.random() * NATURES.length)];
+            tempPoke.shiny = Math.random() < 0.01; // 1-in-100 Shiny Pokémon Supplement Rule
+            populatePokemonFromRepo(tempPoke, chosenRepo, wildLevel);
             currentWildEncounter = tempPoke;
 
-            diceLog.push(`<span class="text-emerald-700 font-bold">🌿 A wild <strong>Lv.${tempPoke.level} ${tempPoke.species}</strong> (${tempPoke.types.join('/')}, SR ${tempPoke.sr}) appeared! [HP: ${tempPoke.hpMax}, AC: ${tempPoke.ac}]</span>`);
+            diceLog.push(`<span class="text-emerald-700 font-bold">🌿 A wild ${tempPoke.shiny ? '✨<strong>SHINY</strong> ' : ''}<strong>Lv.${tempPoke.level} ${tempPoke.species}</strong> (${tempPoke.types.join('/')}, SR ${tempPoke.sr}, ${tempPoke.nature}) appeared! [HP: ${tempPoke.hpMax}, AC: ${tempPoke.ac}]</span>`);
             if (diceLog.length > 40) diceLog.shift();
             saveData(true);
             renderWildEncounterCard();
@@ -1075,12 +1555,13 @@
                 currentWildEncounter.status = val;
             } else if (field === 'ballBonus') {
                 currentWildEncounter.ballBonus = parseInt(val) || 0;
+            } else if (field === 'shiny') {
+                currentWildEncounter.shiny = !currentWildEncounter.shiny;
             }
             renderWildEncounterCard();
         }
 
         function calculateCatchDC(wild) {
-            // Poké5e standard Capture DC approximation: 10 + floor(SR) + floor(Level/2) + floor((hpCurr / hpMax) * 10) - statusMod - ballMod
             const srPart = Math.floor(wild.sr || 1);
             const lvlPart = Math.floor((wild.level || 1) / 2);
             const hpPercentPart = Math.floor(((wild.hpCurr || 1) / Math.max(1, wild.hpMax || 1)) * 10);
@@ -1101,10 +1582,11 @@
             box.innerHTML = `
                 <div class="flex-1 space-y-2 w-full">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-base font-extrabold text-yellow-300">Lv.${w.level} ${w.species}</span>
+                        <span class="text-base font-extrabold text-yellow-300">${w.shiny ? '✨ ' : ''}Lv.${w.level} ${w.species}</span>
                         ${badges}
-                        <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-200">SR ${w.sr} • ${w.nature}</span>
+                        <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-200">SR ${w.sr} • ${NATURES_DATA[w.nature]?.label || w.nature}</span>
                         <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-200">AC ${w.ac}</span>
+                        <button onclick="updateWildState('shiny')" class="text-[10px] px-2 py-0.5 rounded font-bold ${w.shiny ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 text-slate-300'}">✨ Shiny</button>
                     </div>
                     <div class="text-xs text-slate-300 flex flex-wrap gap-3 items-center">
                         <div class="flex items-center gap-1">
@@ -1124,6 +1606,7 @@
                                 <option value="0" ${(w.ballBonus||0)===0?'selected':''}>Poké Ball (+0)</option>
                                 <option value="5" ${(w.ballBonus||0)===5?'selected':''}>Great Ball (+5)</option>
                                 <option value="10" ${(w.ballBonus||0)===10?'selected':''}>Ultra Ball (+10)</option>
+                                <option value="15" ${(w.ballBonus||0)===15?'selected':''}>Specialty / Dusk / Net (+15)</option>
                             </select>
                         </div>
                     </div>
@@ -1161,7 +1644,7 @@
             const cloned = JSON.parse(JSON.stringify(currentWildEncounter));
             cloned.id = 'p_' + Math.random().toString(36).substr(2, 9);
             appState[tIndex].pokemon.push(cloned);
-            diceLog.push(`<span class="text-emerald-600 font-bold">🔴 Gotcha! <strong>${appState[tIndex].name || 'Trainer'}</strong> caught <strong>Lv.${cloned.level} ${cloned.species}</strong>!</span>`);
+            diceLog.push(`<span class="text-emerald-600 font-bold">🔴 Gotcha! <strong>${appState[tIndex].name || 'Trainer'}</strong> caught <strong>${cloned.shiny ? '✨SHINY ' : ''}Lv.${cloned.level} ${cloned.species}</strong>!</span>`);
             saveData(true);
             render();
             displayCustomToast("🔴", `${cloned.species} added to ${appState[tIndex].name || 'Trainer'}'s party!`);
@@ -1171,7 +1654,8 @@
         function getNewTrainer() {
             return {
                 id: 't_' + Math.random().toString(36).substr(2, 9),
-                name: '', level: 1, path: '', hpCurr: 12, hpMax: 12, ac: 12, money: 1000,
+                name: '', level: 1, path: '', specialization: 'None', feats: '', origin: '',
+                hpCurr: 12, hpMax: 12, ac: 12, money: 1000,
                 stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
                 inventory: '',
                 pokemon: [getNewPokemon()]
@@ -1182,7 +1666,9 @@
             return {
                 id: 'p_' + Math.random().toString(36).substr(2, 9),
                 species: '', level: 1, hpCurr: 15, hpMax: 15, ac: 12, bond: 1, status: 'Normal',
-                types: [], sr: 1, hitDice: 'd6', speed: '', ability: '', nature: 'Hardy', evoHint: '', sprite: '',
+                types: [], sr: 1, hitDice: 'd6', speed: '', ability: '', nature: 'Hardy',
+                feats: '', heldItem: '', teraType: '', shiny: false, evoHint: '', sprite: '',
+                baseAttributes: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
                 attributes: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
                 moves: [
                     { name: '', ppCurr: 0, ppMax: 0 },
@@ -1239,7 +1725,7 @@
 
         // === CAMPAIGN BACKUP EXPORT / IMPORT ===
         window.exportCampaignJSON = function() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ trainers: appState, diceLog }, null, 2));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ trainers: appState, diceLog, environment: battlefieldEnv }, null, 2));
             const dlAnchor = document.createElement('a');
             dlAnchor.setAttribute("href", dataStr);
             dlAnchor.setAttribute("download", `poke5e_campaign_${currentRoomCode || 'backup'}.json`);
@@ -1259,7 +1745,9 @@
                     const parsed = JSON.parse(e.target.result);
                     if (Array.isArray(parsed.trainers)) {
                         appState = parsed.trainers;
+                        if (parsed.environment) battlefieldEnv = parsed.environment;
                         saveData(true);
+                        renderEnvironmentBanner();
                         render();
                         displayCustomToast("⬆", "Campaign Restored Successfully!");
                     }
@@ -1313,7 +1801,7 @@
             `).join('');
         }
 
-        // === INPUT CHANGE DELEGATION (Including Move Auto-PP & Species Auto-Detection) ===
+        // === INPUT CHANGE DELEGATION ===
         function setupEventListeners() {
             document.getElementById('app').addEventListener('change', (e) => {
                 if (!isGameMaster) return;
@@ -1327,7 +1815,6 @@
                     const moveSlot = appState[tindex].pokemon[pindex].moves[mindex];
                     moveSlot[field] = value;
 
-                    // If GM typed/selected a Move Name from Jufinda/poke5e, auto-populate its Max PP!
                     if (field === 'name' && value) {
                         const foundMove = lookupMove(value);
                         if (foundMove) {
@@ -1347,7 +1834,6 @@
                         poke.attributes[field] = value;
                     } else {
                         poke[field] = value;
-                        // If GM selected a Pokémon species from the autocomplete list, auto-fill immediately!
                         if (field === 'species' && value) {
                             const foundPoke = lookupPokemon(value);
                             if (foundPoke) {
@@ -1357,12 +1843,29 @@
                                 displayCustomToast("⚡", `${foundPoke.name} stats loaded from Jufinda/poke5e!`);
                                 return;
                             }
+                        } else if (field === 'nature') {
+                            const repoRef = lookupPokemon(poke.species);
+                            const baseAttrs = repoRef?.attributes || poke.baseAttributes || poke.attributes;
+                            poke.attributes = applyNatureModifiersToAttributes(baseAttrs, value);
+                            saveData(true);
+                            render();
+                            displayCustomToast("🌿", `Nature updated to ${value}!`);
+                            return;
+                        } else if (field === 'level' || field === 'bond') {
+                            saveData(true);
+                            render();
+                            return;
                         }
                     }
                 } else if (type === 'stat') {
                     appState[tindex].stats[field] = value;
                 } else {
                     appState[tindex][field] = value;
+                    if (field === 'level' || field === 'path' || field === 'specialization') {
+                        saveData(true);
+                        render();
+                        return;
+                    }
                 }
                 debouncedSave();
             });
@@ -1381,9 +1884,13 @@
             appState.forEach((trainer, tIndex) => {
                 const trainerEl = document.createElement('section');
                 trainerEl.className = "bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-10";
+
+                const tLvl = parseInt(trainer.level) || 1;
+                const tPB = getProficiencyBonus(tLvl);
+                const maxSlots = getTrainerMaxPokeslots(tLvl, trainer.path);
+                const maxSR = getTrainerMaxSR(tLvl);
                 
                 let pokemonHtml = (trainer.pokemon || []).map((poke, pIndex) => {
-                    // Ensure 4 move slots exist
                     if (!Array.isArray(poke.moves)) poke.moves = [];
                     while (poke.moves.length < 4) poke.moves.push({ name: '', ppCurr: 0, ppMax: 0 });
                     if (!poke.attributes) poke.attributes = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
@@ -1392,9 +1899,28 @@
                         `<option value="${status}" ${poke.status === status ? 'selected' : ''}>${status}</option>`
                     ).join('');
 
+                    const natureOptions = NATURES.map(nat => 
+                        `<option value="${nat}" ${(poke.nature || 'Hardy') === nat ? 'selected' : ''}>${NATURES_DATA[nat].label}</option>`
+                    ).join('');
+
                     const typeBadges = (poke.types || []).map(t => 
                         `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${TYPE_COLORS[t] || 'bg-gray-500 text-white'}">${t}</span>`
                     ).join(' ');
+
+                    // Compute 18-Type Defensive Weaknesses, Resistances & Immunities
+                    const effectiveTypes = poke.teraType ? [poke.teraType.toLowerCase()] : (poke.types || []);
+                    const matchups = computeDefensiveMatchups(effectiveTypes);
+                    const matchupHtml = effectiveTypes.length > 0 ? `
+                        <div class="bg-white/80 rounded-lg p-1.5 border border-gray-200 mb-2 text-[10px] space-y-0.5">
+                            ${matchups.weak.length ? `<div><strong class="text-red-600 uppercase">Weak:</strong> <span class="text-gray-700 font-medium">${matchups.weak.join(', ')}</span></div>` : ''}
+                            ${matchups.resist.length ? `<div><strong class="text-emerald-700 uppercase">Resist:</strong> <span class="text-gray-700 font-medium">${matchups.resist.join(', ')}</span></div>` : ''}
+                            ${matchups.immune.length ? `<div><strong class="text-indigo-700 uppercase">Immune:</strong> <span class="text-gray-700 font-medium">${matchups.immune.join(', ')}</span></div>` : ''}
+                        </div>
+                    ` : '';
+
+                    // Bond loyalty tag
+                    const bondVal = parseInt(poke.bond) || 0;
+                    const bondTag = bondVal >= 2 ? `+${bondVal} (+1 Atk/Save)` : (bondVal === 1 ? `+1 (+1 Save)` : (bondVal < 0 ? `${bondVal} (Disloyal)` : `0 (Neutral)`));
 
                     let movesHtml = poke.moves.map((move, mIndex) => {
                         const moveInfo = lookupMove(move.name);
@@ -1404,7 +1930,7 @@
 
                         return `
                         <div class="flex items-center gap-1 mb-1.5">
-                            <input type="text" list="moves-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${move.name || ''}" placeholder="Move ${mIndex+1}" class="flex-1 min-w-0 border border-gray-300 rounded px-1.5 py-1 text-xs font-medium focus:border-red-500 focus:outline-none">
+                            <input type="text" list="moves-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${move.name || ''}" placeholder="Move or TM ${mIndex+1}" class="flex-1 min-w-0 border border-gray-300 rounded px-1.5 py-1 text-xs font-medium focus:border-red-500 focus:outline-none">
                             ${moveTypeBadge}
                             <button onclick="inspectMove(${tIndex}, ${pIndex}, ${mIndex})" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded px-1.5 py-1 text-[10px] font-bold transition" title="Inspect Move & Roll Attack/Damage">🎲</button>
                             <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, -1)" class="bg-gray-200 hover:bg-gray-300 w-5 h-6 rounded text-xs font-bold">-</button>
@@ -1416,19 +1942,24 @@
                     }).join('');
 
                     return `
-                    <div class="bg-gray-50 rounded-xl border border-gray-200 p-3.5 relative shadow-sm">
+                    <div class="rounded-xl border border-gray-200 p-3.5 relative shadow-sm ${poke.shiny ? 'shiny-card' : 'bg-gray-50'}">
                         ${isGameMaster ? `<button onclick="removePokemon(${tIndex}, ${pIndex})" class="absolute top-2.5 right-2.5 text-gray-400 hover:text-red-500 text-xs font-bold" title="Remove Pokémon">✖</button>` : ''}
                         
-                        <!-- Species Header & Badges -->
+                        <!-- Species Header, Types, Shiny & Rest Buttons -->
                         <div class="flex flex-wrap items-center gap-1.5 mb-2 pr-5">
                             ${typeBadges || `<span class="text-[10px] text-gray-400 italic">Select a Pokémon species below</span>`}
-                            ${poke.hitDice ? `<span class="text-[10px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded font-bold">Hit Die: ${poke.hitDice}</span>` : ''}
+                            ${poke.sr !== undefined ? `<span class="text-[10px] ${poke.sr > maxSR ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-gray-200 text-gray-700'} px-1.5 py-0.5 rounded font-bold" title="Max Controlled SR: ${maxSR}">SR ${poke.sr}</span>` : ''}
+                            <button onclick="pokemonShortRestHitDie(${tIndex}, ${pIndex})" class="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded font-bold border border-emerald-300 transition" title="Short Rest: Spend 1 Hit Die (${poke.hitDice || 'd6'}) + CON to heal">⛺ Hit Die (${poke.hitDice || 'd6'})</button>
+                            ${isGameMaster ? `<button onclick="toggleShiny(${tIndex}, ${pIndex})" class="text-[10px] px-1.5 py-0.5 rounded font-bold border transition ${poke.shiny ? 'bg-yellow-400 text-gray-900 border-yellow-500' : 'bg-white text-gray-500 border-gray-300'}" title="Toggle Shiny Pokémon">✨</button>` : (poke.shiny ? `<span class="text-[10px] bg-yellow-400 text-gray-900 px-1.5 py-0.5 rounded font-bold">✨ SHINY</span>` : '')}
                             ${poke.speed ? `<span class="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-semibold">${poke.speed}</span>` : ''}
                             ${poke.evoHint && isGameMaster ? `<button onclick="evolvePokemon(${tIndex}, ${pIndex})" class="text-[10px] bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-0.5 rounded font-bold border border-purple-300 transition" title="Click to Evolve">${poke.evoHint}</button>` : ''}
                         </div>
 
-                        <div class="grid grid-cols-12 gap-2 mb-2.5">
-                            <div class="col-span-7">
+                        <!-- Type Effectiveness Weaknesses / Resistances / Immunities -->
+                        ${matchupHtml}
+
+                        <div class="grid grid-cols-12 gap-2 mb-2">
+                            <div class="col-span-6">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Species (Fork Auto-Fill)</label>
                                 <div class="flex items-center gap-1">
                                     <input type="text" id="p-s-${tIndex}-${pIndex}" list="pokemon-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species || ''}" placeholder="e.g. Bulbasaur" class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-sm font-bold">
@@ -1439,14 +1970,32 @@
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Lvl</label>
                                 <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="level" value="${poke.level}" class="w-full border border-gray-300 rounded p-1 text-sm text-center font-bold">
                             </div>
-                            <div class="col-span-3">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Bond</label>
-                                <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="bond" value="${poke.bond}" class="w-full border border-gray-300 rounded p-1 text-sm text-center">
+                            <div class="col-span-4">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5" title="${bondTag}">Bond (-3 to +3)</label>
+                                <input type="number" min="-3" max="3" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="bond" value="${poke.bond}" class="w-full border border-gray-300 rounded p-1 text-xs text-center font-bold">
                             </div>
                         </div>
 
-                        <!-- HP, AC, Status -->
-                        <div class="grid grid-cols-12 gap-2 mb-2.5 items-end">
+                        <!-- Nature & Held Item / Tera Type Row -->
+                        <div class="grid grid-cols-12 gap-2 mb-2">
+                            <div class="col-span-5">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Nature (+2 / -2)</label>
+                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="nature" class="w-full border border-gray-300 rounded p-1 text-[11px] bg-white font-semibold">
+                                    ${natureOptions}
+                                </select>
+                            </div>
+                            <div class="col-span-4">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Held Item</label>
+                                <input type="text" list="items-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="heldItem" value="${poke.heldItem || ''}" placeholder="Leftovers..." class="w-full border border-gray-300 rounded p-1 text-[11px]">
+                            </div>
+                            <div class="col-span-3">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Tera/Form</label>
+                                <input type="text" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="teraType" value="${poke.teraType || ''}" placeholder="Fire..." class="w-full border border-gray-300 rounded p-1 text-[11px]">
+                            </div>
+                        </div>
+
+                        <!-- HP, AC, Status (with Status Tooltip Button) -->
+                        <div class="grid grid-cols-12 gap-2 mb-2 items-end">
                             <div class="col-span-6">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">HP</label>
                                 <div class="flex items-center space-x-1">
@@ -1463,23 +2012,32 @@
                             </div>
                             <div class="col-span-4">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Status</label>
-                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="status" class="w-full border border-gray-300 rounded p-1 text-xs bg-white font-semibold">
-                                    ${statusOptions}
-                                </select>
+                                <div class="flex items-center gap-1">
+                                    <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="status" class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-xs bg-white font-semibold">
+                                        ${statusOptions}
+                                    </select>
+                                    <button onclick="inspectStatus('${poke.status || 'Normal'}')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded px-1.5 py-1 text-[10px] font-bold" title="View Status Condition Rule">?</button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Ability Row -->
-                        <div class="mb-2.5">
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Ability</label>
-                            <div class="flex items-center gap-1">
-                                <input type="text" list="abilities-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${poke.ability || ''}" placeholder="Overgrow, Static..." class="flex-1 border border-gray-300 rounded p-1 text-xs">
-                                <button onclick="inspectAbilityText('${(poke.ability || '').replace(/'/g, "\\'")}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded px-2 py-1 text-[10px] font-bold" title="Inspect Ability Description">ℹ️</button>
+                        <!-- Ability & Feats Row -->
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Ability</label>
+                                <div class="flex items-center gap-1">
+                                    <input type="text" list="abilities-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${poke.ability || ''}" placeholder="Overgrow..." class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-xs">
+                                    <button onclick="inspectAbilityText('${(poke.ability || '').replace(/'/g, "\\'")}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded px-1.5 py-1 text-[10px] font-bold" title="Inspect Ability">ℹ️</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Pokémon Feats</label>
+                                <input type="text" list="feats-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="feats" value="${poke.feats || ''}" placeholder="Tough, Mobile..." class="w-full border border-gray-300 rounded p-1 text-xs">
                             </div>
                         </div>
 
-                        <!-- Pokémon 6 Attributes (Used for Move Attack/Damage Rolls) -->
-                        <div class="bg-white p-2 rounded-lg border border-gray-200 mb-2.5">
+                        <!-- Pokémon 6 Attributes (Includes Nature Modifiers) -->
+                        <div class="bg-white p-2 rounded-lg border border-gray-200 mb-2">
                             <div class="grid grid-cols-6 gap-1 text-center">
                                 ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(stat => {
                                     const val = poke.attributes?.[stat] ?? 10;
@@ -1496,7 +2054,7 @@
                         <!-- 4 Moves & Interactive Rollers -->
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex justify-between">
-                                <span>Moves & PP (4 Slots)</span>
+                                <span>Moves & TMs (4 Slots)</span>
                                 <span class="text-[9px] text-blue-600 font-semibold">Click 🎲 to inspect & roll!</span>
                             </label>
                             ${movesHtml}
@@ -1505,17 +2063,23 @@
                 }).join('');
 
                 trainerEl.innerHTML = `
-                    <div class="bg-gray-800 text-white px-6 py-3 flex justify-between items-center border-t-8 border-t-red-600">
-                        <div class="flex items-center gap-2">
+                    <div class="bg-gray-800 text-white px-6 py-3 flex flex-wrap justify-between items-center gap-2 border-t-8 border-t-red-600">
+                        <div class="flex flex-wrap items-center gap-2">
                             <span class="bg-red-600 text-white text-xs font-extrabold px-2.5 py-1 rounded">TRAINER</span>
-                            <span class="font-bold text-sm text-gray-200">${trainer.name || `Trainer #${tIndex + 1}`}</span>
+                            <span class="font-bold text-sm text-gray-100">${trainer.name || `Trainer #${tIndex + 1}`}</span>
+                            <span class="text-xs bg-gray-700 text-yellow-300 px-2 py-0.5 rounded font-bold">PB: +${tPB}</span>
+                            <span class="text-xs bg-gray-700 text-emerald-300 px-2 py-0.5 rounded font-bold">Pokéslots: ${trainer.pokemon.length}/${maxSlots}</span>
+                            <span class="text-xs bg-gray-700 text-blue-300 px-2 py-0.5 rounded font-bold">Max Control SR: ≤ ${maxSR}</span>
                         </div>
-                        ${isGameMaster ? `<button onclick="removeTrainer(${tIndex})" class="text-gray-400 hover:text-red-400 text-xs font-semibold">✖ Remove Trainer</button>` : ''}
+                        <div class="flex items-center gap-3">
+                            ${isGameMaster ? `<button onclick="trainerLongRest(${tIndex})" class="bg-pink-600 hover:bg-pink-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow">🏥 Long Rest (Heal All)</button>` : ''}
+                            ${isGameMaster ? `<button onclick="removeTrainer(${tIndex})" class="text-gray-400 hover:text-red-400 text-xs font-semibold">✖ Remove Trainer</button>` : ''}
+                        </div>
                     </div>
                     
                     <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                         <!-- Trainer Column -->
-                        <div class="lg:col-span-4 space-y-4">
+                        <div class="lg:col-span-4 space-y-3.5">
                             <div class="flex gap-3">
                                 <div class="flex-1">
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trainer Name</label>
@@ -1523,18 +2087,29 @@
                                 </div>
                                 <div class="w-20">
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Level</label>
-                                    <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="level" value="${trainer.level}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-center font-bold">
+                                    <input type="number" min="1" max="20" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="level" value="${trainer.level}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-center font-bold">
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trainer Path</label>
-                                    <input type="text" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="path" value="${trainer.path}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm" placeholder="Ace Trainer">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trainer Path (Core)</label>
+                                    <input type="text" list="paths-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="path" value="${trainer.path || ''}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold" placeholder="Ace Trainer, Nurse...">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Type Specialization</label>
+                                    <input type="text" list="specs-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="specialization" value="${trainer.specialization || ''}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold" placeholder="Fire, Water...">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trainer Origin / Feats</label>
+                                    <input type="text" list="feats-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="feats" value="${trainer.feats || ''}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs" placeholder="Kanto, Lucky...">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Poké Dollars (₽)</label>
-                                    <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="money" value="${trainer.money}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm font-semibold">
+                                    <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="money" value="${trainer.money}" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-bold text-emerald-700">
                                 </div>
                             </div>
 
@@ -1558,32 +2133,38 @@
                             <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
                                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 text-center">Trainer Ability Scores</label>
                                 <div class="grid grid-cols-6 gap-1.5">
-                                    ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(stat => `
+                                    ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(stat => {
+                                        const val = trainer.stats[stat] ?? 10;
+                                        const mod = formatMod(getMod(val));
+                                        return `
                                         <div class="text-center">
-                                            <label class="block text-[10px] font-bold text-gray-600 uppercase">${stat}</label>
-                                            <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-type="stat" data-field="${stat}" value="${trainer.stats[stat]}" class="w-full border border-gray-300 rounded p-1 text-center text-xs font-semibold">
-                                        </div>
-                                    `).join('')}
+                                            <label class="block text-[9px] font-bold text-gray-600 uppercase">${stat} (${mod})</label>
+                                            <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-type="stat" data-field="${stat}" value="${val}" class="w-full border border-gray-300 rounded p-1 text-center text-xs font-semibold">
+                                        </div>`;
+                                    }).join('')}
                                 </div>
                             </div>
 
-                            <!-- Forked Repo Item Quick-Adder & Inventory -->
+                            <!-- Forked Repo Item & TM Quick-Adder & Inventory -->
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Inventory & Items (items.json)</label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Inventory, TMs & Items (items.json)</label>
                                 ${isGameMaster ? `
                                 <div class="flex gap-1 mb-1.5">
-                                    <input type="text" id="item-picker-${tIndex}" list="items-datalist" placeholder="Search item (e.g. Great Ball, Potion)..." class="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs">
-                                    <button onclick="quickAddItemToInventory(${tIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg text-xs shadow-sm">+ Add Item</button>
+                                    <input type="text" id="item-picker-${tIndex}" list="items-datalist" placeholder="Search item (e.g. Ultra Ball, Potion)..." class="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs">
+                                    <button onclick="quickAddItemToInventory(${tIndex})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg text-xs shadow-sm">+ Add</button>
                                     <button onclick="inspectItemText(document.getElementById('item-picker-${tIndex}').value)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-2 py-1 rounded-lg text-xs" title="Inspect Item Description">ℹ️</button>
                                 </div>` : ''}
-                                <textarea ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="inventory" class="w-full h-28 border-2 border-gray-200 rounded-lg p-2 resize-none text-xs leading-relaxed" placeholder="Items and notes...">${trainer.inventory}</textarea>
+                                <textarea ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-field="inventory" class="w-full h-28 border-2 border-gray-200 rounded-lg p-2 resize-none text-xs leading-relaxed" placeholder="Items, badges, TMs, and notes...">${trainer.inventory}</textarea>
                             </div>
                         </div>
 
                         <!-- Pokémon Party Column -->
                         <div class="lg:col-span-8 bg-gray-100 rounded-xl p-4 border border-gray-200">
                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-base font-extrabold text-gray-800">Pokémon Party (${trainer.pokemon.length}/6)</h3>
+                                <div>
+                                    <h3 class="text-base font-extrabold text-gray-800">Pokémon Party (${trainer.pokemon.length}/6 Roster • ${maxSlots} Active Pokéslots)</h3>
+                                    <p class="text-[11px] text-gray-500">Auto-calculates Type Matchups, Nature (+2/-2) stats, Bond bonuses, and Short Rest Hit Dice.</p>
+                                </div>
                                 ${isGameMaster && trainer.pokemon.length < 6 ? `<button onclick="addPokemon(${tIndex})" class="bg-gray-900 hover:bg-black text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm">+ Add Pokémon Slot</button>` : ''}
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
