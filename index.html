@@ -17,6 +17,8 @@
         #toast { visibility: hidden; opacity: 0; transition: opacity 0.3s, visibility 0.3s; }
         #toast.show { visibility: visible; opacity: 1; }
         .shiny-card { background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fef08a 100%); border-color: #eab308 !important; }
+        /* Resizable Pokémon Card support */
+        .pokemon-card { resize: both; overflow: auto; min-width: 280px; min-height: 420px; }
     </style>
 </head>
 <body class="text-gray-800 pb-24">
@@ -356,7 +358,8 @@
                     <p>
                         • <strong>Trainer Paths & Specializations:</strong> Choose official paths (like <em>Ace Trainer, Collector, Nurse, Ranger</em>) and elemental specializations which grant combat bonuses.<br>
                         • <strong>Pokéslots & Max SR:</strong> Trainers start with 3 Pokéslots (scaling up to 6 at level 15) and a Max Species Rating (SR) control limit based on level.<br>
-                        • <strong>Adding Pokémon:</strong> Click <strong>+ Add Pokémon Slot</strong>. Type a species name (e.g. <em>Pikachu</em>) and click the yellow <strong>⚡</strong> button to auto-fill official base stats, elemental types, ability, and moves directly from your forked GitHub compendium!
+                        • <strong>Adding Pokémon:</strong> Click <strong>+ Add Pokémon Slot</strong>. Type a species name (e.g. <em>Pikachu</em>) and click the yellow <strong>⚡</strong> button to auto-fill official base stats, elemental types, ability, and moves directly from your forked GitHub compendium!<br>
+                        • <strong>Resizable Cards:</strong> You can drag the bottom-right corner of any Pokémon card to resize it for comfortable viewing.
                     </p>
                 </div>
 
@@ -717,7 +720,6 @@
                     return `<option value="${m.name}">${m.type.toUpperCase()} | PP: ${m.pp} | ${m.time}</option>`;
                 }).join('');
 
-                // FIXED: Populate Pokémon Datalist with Species Name first so users see names clearly
                 const pokeListEl = document.getElementById('pokemon-datalist');
                 pokeListEl.innerHTML = poke5eDB.pokemon.map(p => {
                     poke5eDB.pokemonById.set(p.id.toLowerCase(), p);
@@ -736,7 +738,6 @@
                     }).join('');
                 }
 
-                // FIXED: Populate Items Datalist correctly using item.name
                 const itemListEl = document.getElementById('items-datalist');
                 itemListEl.innerHTML = poke5eDB.items.map(it => {
                     poke5eDB.itemsByName.set(it.name.toLowerCase(), it);
@@ -1571,7 +1572,6 @@
             }
         }
 
-        // === GM WILD ENCOUNTER SPAWNER (With Fixed Fallback & Name Search) ===
         window.toggleEncounterPanel = function() {
             const panel = document.getElementById('encounter-panel');
             panel.classList.toggle('hidden');
@@ -1775,7 +1775,6 @@
             debouncedSave();
         }
 
-        // FIXED: Quantity picker support for inventory items
         window.quickAddItemToInventory = function(tIndex) {
             if (!isGameMaster) return;
             const input = document.getElementById(`item-picker-${tIndex}`);
@@ -1999,20 +1998,20 @@
                             : '';
 
                         return `
-                        <div class="flex items-center gap-1 mb-1.5">
-                            <input type="text" list="moves-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${move.name || ''}" placeholder="Move or TM ${mIndex+1}" class="flex-1 min-w-0 border border-gray-300 rounded px-1.5 py-1 text-xs font-medium focus:border-red-500 focus:outline-none">
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <input type="text" list="moves-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${move.name || ''}" placeholder="Move or TM ${mIndex+1}" class="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1.5 text-xs font-medium focus:border-red-500 focus:outline-none">
                             ${moveTypeBadge}
-                            <button onclick="inspectMove(${tIndex}, ${pIndex}, ${mIndex})" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded px-1.5 py-1 text-[10px] font-bold transition" title="Inspect Move & Roll Attack/Damage">🎲</button>
-                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, -1)" class="bg-gray-200 hover:bg-gray-300 w-5 h-6 rounded text-xs font-bold">-</button>
-                            <input type="number" id="pp-${tIndex}-${pIndex}-${mIndex}" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppCurr" value="${move.ppCurr}" class="w-8 text-center border border-gray-300 rounded py-1 text-xs font-bold">
+                            <button onclick="inspectMove(${tIndex}, ${pIndex}, ${mIndex})" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded px-2 py-1.5 text-xs font-bold transition" title="Inspect Move & Roll Attack/Damage">🎲</button>
+                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, -1)" class="bg-gray-200 hover:bg-gray-300 w-6 h-7 rounded text-xs font-bold">-</button>
+                            <input type="number" id="pp-${tIndex}-${pIndex}-${mIndex}" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppCurr" value="${move.ppCurr}" class="w-9 text-center border border-gray-300 rounded py-1.5 text-xs font-bold">
                             <span class="text-[10px] text-gray-400">/</span>
-                            <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppMax" value="${move.ppMax}" class="w-8 text-center border border-gray-300 rounded py-1 text-xs text-gray-500">
-                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, 1)" class="bg-gray-200 hover:bg-gray-300 w-5 h-6 rounded text-xs font-bold">+</button>
+                            <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="ppMax" value="${move.ppMax}" class="w-9 text-center border border-gray-300 rounded py-1.5 text-xs text-gray-500">
+                            <button ${!isGameMaster ? 'disabled' : ''} onclick="adjustPP(${tIndex}, ${pIndex}, ${mIndex}, 1)" class="bg-gray-200 hover:bg-gray-300 w-6 h-7 rounded text-xs font-bold">+</button>
                         </div>`;
                     }).join('');
 
                     return `
-                    <div class="rounded-xl border border-gray-200 p-3.5 relative shadow-sm ${poke.shiny ? 'shiny-card' : 'bg-gray-50'}">
+                    <div class="pokemon-card rounded-xl border border-gray-200 p-4 relative shadow-sm ${poke.shiny ? 'shiny-card' : 'bg-gray-50'}">
                         ${isGameMaster ? `<button onclick="removePokemon(${tIndex}, ${pIndex})" class="absolute top-2.5 right-2.5 text-gray-400 hover:text-red-500 text-xs font-bold" title="Remove Pokémon">✖</button>` : ''}
                         
                         <div class="flex flex-wrap items-center gap-1.5 mb-2 pr-5">
@@ -2030,34 +2029,34 @@
                             <div class="col-span-6">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Species (Fork Auto-Fill)</label>
                                 <div class="flex items-center gap-1">
-                                    <input type="text" id="p-s-${tIndex}-${pIndex}" list="pokemon-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species || ''}" placeholder="e.g. Bulbasaur" class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-sm font-bold">
-                                    ${isGameMaster ? `<button onclick="autoFillPokemon(${tIndex}, ${pIndex})" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-950 rounded px-2 py-1 text-xs font-extrabold shadow-sm transition" title="Auto-Fill Stats, Types, Ability & Moves from Jufinda/poke5e">⚡</button>` : ''}
+                                    <input type="text" id="p-s-${tIndex}-${pIndex}" list="pokemon-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species || ''}" placeholder="e.g. Bulbasaur" class="flex-1 min-w-0 border border-gray-300 rounded p-1.5 text-sm font-bold">
+                                    ${isGameMaster ? `<button onclick="autoFillPokemon(${tIndex}, ${pIndex})" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-950 rounded px-2.5 py-1.5 text-xs font-extrabold shadow-sm transition" title="Auto-Fill Stats, Types, Ability & Moves from Jufinda/poke5e">⚡</button>` : ''}
                                 </div>
                             </div>
                             <div class="col-span-2">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Lvl</label>
-                                <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="level" value="${poke.level}" class="w-full border border-gray-300 rounded p-1 text-sm text-center font-bold">
+                                <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="level" value="${poke.level}" class="w-full border border-gray-300 rounded p-1.5 text-sm text-center font-bold">
                             </div>
                             <div class="col-span-4">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5" title="${bondTag}">Bond (-3 to +3)</label>
-                                <input type="number" min="-3" max="3" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="bond" value="${poke.bond}" class="w-full border border-gray-300 rounded p-1 text-xs text-center font-bold">
+                                <input type="number" min="-3" max="3" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="bond" value="${poke.bond}" class="w-full border border-gray-300 rounded p-1.5 text-xs text-center font-bold">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-12 gap-2 mb-2">
                             <div class="col-span-5">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Nature (+2 / -2)</label>
-                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="nature" class="w-full border border-gray-300 rounded p-1 text-[11px] bg-white font-semibold">
+                                <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="nature" class="w-full border border-gray-300 rounded p-1.5 text-[11px] bg-white font-semibold">
                                     ${natureOptions}
                                 </select>
                             </div>
                             <div class="col-span-4">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Held Item</label>
-                                <input type="text" list="items-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="heldItem" value="${poke.heldItem || ''}" placeholder="Leftovers..." class="w-full border border-gray-300 rounded p-1 text-[11px]">
+                                <input type="text" list="items-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="heldItem" value="${poke.heldItem || ''}" placeholder="Leftovers..." class="w-full border border-gray-300 rounded p-1.5 text-[11px]">
                             </div>
                             <div class="col-span-3">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Tera/Form</label>
-                                <input type="text" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="teraType" value="${poke.teraType || ''}" placeholder="Fire..." class="w-full border border-gray-300 rounded p-1 text-[11px]">
+                                <input type="text" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="teraType" value="${poke.teraType || ''}" placeholder="Fire..." class="w-full border border-gray-300 rounded p-1.5 text-[11px]">
                             </div>
                         </div>
 
@@ -2065,24 +2064,24 @@
                             <div class="col-span-6">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">HP</label>
                                 <div class="flex items-center space-x-1">
-                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, -1)" class="bg-red-100 hover:bg-red-200 text-red-700 w-6 h-7 rounded text-sm font-bold">-</button>` : ''}
-                                    <input type="number" id="p-${tIndex}-${pIndex}-hp" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpCurr" value="${poke.hpCurr}" class="w-12 text-center border border-gray-300 rounded p-1 text-xs font-bold">
+                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, -1)" class="bg-red-100 hover:bg-red-200 text-red-700 w-7 h-8 rounded text-sm font-bold">-</button>` : ''}
+                                    <input type="number" id="p-${tIndex}-${pIndex}-hp" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpCurr" value="${poke.hpCurr}" class="w-14 text-center border border-gray-300 rounded p-1.5 text-xs font-bold">
                                     <span class="text-gray-400 text-xs">/</span>
-                                    <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpMax" value="${poke.hpMax}" class="w-12 text-center border border-gray-300 rounded p-1 text-xs text-gray-500">
-                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, 1)" class="bg-green-100 hover:bg-green-200 text-green-700 w-6 h-7 rounded text-sm font-bold">+</button>` : ''}
+                                    <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="hpMax" value="${poke.hpMax}" class="w-14 text-center border border-gray-300 rounded p-1.5 text-xs text-gray-500">
+                                    ${isGameMaster ? `<button onclick="adjustHP(${tIndex}, ${pIndex}, 1)" class="bg-green-100 hover:bg-green-200 text-green-700 w-7 h-8 rounded text-sm font-bold">+</button>` : ''}
                                 </div>
                             </div>
                             <div class="col-span-2">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">AC</label>
-                                <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ac" value="${poke.ac}" class="w-full border border-gray-300 rounded p-1 text-xs text-center font-bold">
+                                <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ac" value="${poke.ac}" class="w-full border border-gray-300 rounded p-1.5 text-xs text-center font-bold">
                             </div>
                             <div class="col-span-4">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Status</label>
                                 <div class="flex items-center gap-1">
-                                    <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="status" class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-xs bg-white font-semibold">
+                                    <select ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="status" class="flex-1 min-w-0 border border-gray-300 rounded p-1.5 text-xs bg-white font-semibold">
                                         ${statusOptions}
                                     </select>
-                                    <button onclick="inspectStatus('${poke.status || 'Normal'}')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded px-1.5 py-1 text-[10px] font-bold" title="View Status Condition Rule">?</button>
+                                    <button onclick="inspectStatus('${poke.status || 'Normal'}')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded px-2 py-1.5 text-[10px] font-bold" title="View Status Condition Rule">?</button>
                                 </div>
                             </div>
                         </div>
@@ -2091,17 +2090,17 @@
                             <div>
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Ability</label>
                                 <div class="flex items-center gap-1">
-                                    <input type="text" list="abilities-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${poke.ability || ''}" placeholder="Overgrow..." class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-xs">
-                                    <button onclick="inspectAbilityText('${(poke.ability || '').replace(/'/g, "\\'")}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded px-1.5 py-1 text-[10px] font-bold" title="Inspect Ability">ℹ️</button>
+                                    <input type="text" list="abilities-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${poke.ability || ''}" placeholder="Overgrow..." class="flex-1 min-w-0 border border-gray-300 rounded p-1.5 text-xs">
+                                    <button onclick="inspectAbilityText('${(poke.ability || '').replace(/'/g, "\\'")}')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded px-2 py-1.5 text-[10px] font-bold" title="Inspect Ability">ℹ️</button>
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Pokémon Feats</label>
-                                <input type="text" list="feats-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="feats" value="${poke.feats || ''}" placeholder="Tough, Mobile..." class="w-full border border-gray-300 rounded p-1 text-xs">
+                                <input type="text" list="feats-datalist" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="feats" value="${poke.feats || ''}" placeholder="Tough, Mobile..." class="w-full border border-gray-300 rounded p-1.5 text-xs">
                             </div>
                         </div>
 
-                        <div class="bg-white p-2 rounded-lg border border-gray-200 mb-2">
+                        <div class="bg-white p-2.5 rounded-lg border border-gray-200 mb-2">
                             <div class="grid grid-cols-6 gap-1 text-center">
                                 ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(stat => {
                                     const val = poke.attributes?.[stat] ?? 10;
@@ -2109,7 +2108,7 @@
                                     return `
                                     <div>
                                         <label class="block text-[9px] font-bold text-gray-500 uppercase">${stat} (${mod})</label>
-                                        <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-type="pstat" data-field="${stat}" value="${val}" class="w-full border border-gray-200 rounded p-0.5 text-center text-xs font-bold">
+                                        <input type="number" ${!isGameMaster ? 'disabled' : ''} data-tindex="${tIndex}" data-pindex="${pIndex}" data-type="pstat" data-field="${stat}" value="${val}" class="w-full border border-gray-200 rounded p-1 text-center text-xs font-bold">
                                     </div>`;
                                 }).join('')}
                             </div>
@@ -2226,7 +2225,7 @@
                             <div class="flex justify-between items-center mb-4">
                                 <div>
                                     <h3 class="text-base font-extrabold text-gray-800">Pokémon Party (${trainer.pokemon.length}/6 Roster • ${maxSlots} Active Pokéslots)</h3>
-                                    <p class="text-[11px] text-gray-500">Auto-calculates Type Matchups, Nature (+2/-2) stats, Bond bonuses, and Short Rest Hit Dice.</p>
+                                    <p class="text-[11px] text-gray-500">Auto-calculates Type Matchups, Nature (+2/-2) stats, Bond bonuses, and Short Rest Hit Dice. (Cards are resizable via bottom-right handle!)</p>
                                 </div>
                                 ${isGameMaster && trainer.pokemon.length < 6 ? `<button onclick="addPokemon(${tIndex})" class="bg-gray-900 hover:bg-black text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm">+ Add Pokémon Slot</button>` : ''}
                             </div>
