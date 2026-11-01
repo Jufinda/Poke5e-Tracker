@@ -329,41 +329,67 @@
 
     <!-- STEP-BY-STEP HOW TO PLAY GUIDE MODAL -->
     <div id="guide-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border-t-8 border-sky-500 flex flex-col max-h-[85vh]">
+        <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border-t-8 border-sky-500 flex flex-col max-h-[85vh]">
             <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
                 <div>
-                    <h3 class="text-lg font-extrabold flex items-center gap-2">📘 Poké5e Campaign Hub — Step-by-Step Guide</h3>
-                    <p class="text-xs text-gray-400">Everything you need to run a smooth multiplayer tabletop campaign session.</p>
+                    <h3 class="text-lg font-extrabold flex items-center gap-2">📘 Complete Poké5e Tabletop Rulebook & Playthrough Tutorial</h3>
+                    <p class="text-xs text-gray-400">Step-by-step master guide for playing and running a full Poké5e campaign session.</p>
                 </div>
                 <button onclick="closeGuideModal()" class="text-gray-400 hover:text-white font-bold text-xl">✖</button>
             </div>
-            <div class="p-6 overflow-y-auto space-y-4 text-xs md:text-sm text-gray-700 bg-gray-50 leading-relaxed">
+            <div class="p-6 overflow-y-auto space-y-5 text-xs md:text-sm text-gray-700 bg-gray-50 leading-relaxed">
+                
+                <!-- Part 1 -->
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2">
-                    <h4 class="font-extrabold text-gray-900 text-base">👑 Step 1: Hosting or Joining a Room</h4>
-                    <p>When you open the tracker, type your name into the <strong>Your Name / Handle</strong> box. 
-                    If you are the Dungeon Master / Game Master, click <strong>👑 Host Game</strong>. This creates a secret 4-letter room code (e.g. <code class="bg-gray-100 font-mono font-bold text-red-600 px-1 py-0.5 rounded">X7K2</code>) and assigns you full GM editing permissions. Players can open the same link on their phones or browsers, type their name, enter the 4-letter code, and click <strong>Join Room</strong> to sync into the party in real-time!</p>
+                    <h4 class="font-extrabold text-gray-900 text-base text-red-600">Part 1: Setting up Multiplayer & Hosting</h4>
+                    <p>
+                        1. Type your name into the <strong>Your Name / Handle</strong> box on the lobby screen.<br>
+                        2. If you are the Dungeon/Game Master, click <strong>👑 Host Game</strong> to generate a unique 4-letter room code.<br>
+                        3. Players open the same link, enter their name and the 4-letter code, and click <strong>Join Room</strong> to sync into the active party.<br>
+                        4. The GM has full editing controls (adding trainers, spawning encounters), while players participate in live dice rolls and party viewing.
+                    </p>
                 </div>
 
+                <!-- Part 2 -->
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2">
-                    <h4 class="font-extrabold text-gray-900 text-base">👥 Step 2: Creating Trainers & Pokémon</h4>
-                    <p>As the Game Master, click <strong>+ Add Trainer</strong> to create a character sheet. You can set their Level, Trainer Path (e.g., <em>Ace Trainer, Nurse, Collector</em>), and Type Specialization. Each trainer automatically calculates their Max Pokéslots and Maximum Controllable Species Rating (SR). Click <strong>+ Add Pokémon Slot</strong> to add their partner Pokémon.</p>
+                    <h4 class="font-extrabold text-gray-900 text-base text-red-600">Part 2: Trainer Sheets & Pokémon Roster</h4>
+                    <p>
+                        • <strong>Trainer Paths & Specializations:</strong> Choose official paths (like <em>Ace Trainer, Collector, Nurse, Ranger</em>) and elemental specializations which grant combat bonuses.<br>
+                        • <strong>Pokéslots & Max SR:</strong> Trainers start with 3 Pokéslots (scaling up to 6 at level 15) and a Max Species Rating (SR) control limit based on level.<br>
+                        • <strong>Adding Pokémon:</strong> Click <strong>+ Add Pokémon Slot</strong>. Type a species name (e.g. <em>Pikachu</em>) and click the yellow <strong>⚡</strong> button to auto-fill official base stats, elemental types, ability, and moves directly from your forked GitHub compendium!
+                    </p>
                 </div>
 
+                <!-- Part 3 -->
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2">
-                    <h4 class="font-extrabold text-gray-900 text-base">⚡ Step 3: Forked Auto-Fill & Inventory</h4>
-                    <p>In the Pokémon species input, type a name (like <code class="bg-gray-100 px-1 rounded font-bold">Pikachu</code> or <code class="bg-gray-100 px-1 rounded font-bold">Charizard</code>) or use the autocomplete dropdown. Click the yellow <strong class="text-yellow-700 font-black">⚡</strong> button to instantly fetch that species' official base stats, elemental types, ability, and starting moves directly from your GitHub fork! 
-                    For items, use the inventory item picker to select items like <strong>Poké Ball</strong> or <strong>Potion</strong>, specify a quantity, and click <strong>+ Add</strong>.</p>
+                    <h4 class="font-extrabold text-gray-900 text-base text-red-600">Part 3: Step-by-Step Combat & Round Structure</h4>
+                    <p>
+                        Combat in Poké5e runs in rounds using D&D 5e mechanics:<br>
+                        1. <strong>Initiative:</strong> Roll Initiative (d20 + DEX mod) to determine turn order.<br>
+                        2. <strong>Your Turn:</strong> On your turn, you get <strong>1 Action</strong> (Attack with a Move, Cast Move, Use Item, Dash, Dodge), <strong>1 Bonus Action</strong>, Movement, and <strong>1 Reaction</strong> per round.<br>
+                        3. <strong>Rolling Moves:</strong> Click the blue <strong>🎲</strong> button next to any move in a Pokémon's card. The tracker automatically calculates Attack Rolls, Save DCs, level-scaled damage dice, <strong>STAB</strong> (Same-Type Attack Bonus), Natures (+2/-2 stats), Bonds, and active global Weather & Terrain modifiers, posting the results directly into the shared session log!
+                    </p>
                 </div>
 
+                <!-- Part 4 -->
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2">
-                    <h4 class="font-extrabold text-gray-900 text-base">🎲 Step 4: Rolling Moves & Combat</h4>
-                    <p>Once a Pokémon has moves loaded, clicking the blue <strong class="text-blue-700 font-black">🎲</strong> button next to any move opens its full rule inspector and lets you roll its attack, save DC, and level-scaled damage dice directly into the shared session log—automatically factoring in <strong>STAB</strong> (Same-Type Attack Bonus), <strong>Natures (+2/-2)</strong>, <strong>Bonds</strong>, and active global <strong>Weather & Terrain</strong>.</p>
+                    <h4 class="font-extrabold text-gray-900 text-base text-red-600">Part 4: Wild Encounters, Catching & Inventories</h4>
+                    <p>
+                        • <strong>Wild Encounters:</strong> The GM can click <strong>🌿 Wild Encounter & Biomes</strong>, filter by Biome, SR, and Type, and click <strong>Spawn Wild</strong>.<br>
+                        • <strong>Capture DC:</strong> The tracker instantly calculates the live Capture DC (<code class="bg-gray-100 font-mono font-bold px-1 rounded">10 + SR + (Lvl/2) + HP% - Status - Ball Bonus</code>). Lower their HP and inflict Sleep or Paralysis to make catching easier, then click <strong>+ Catch</strong>!<br>
+                        • <strong>Items & TMs:</strong> Use the inventory picker to search items (Poké Balls, Potions, TMs), choose quantities, and add them instantly.
+                    </p>
                 </div>
 
+                <!-- Part 5 -->
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2">
-                    <h4 class="font-extrabold text-gray-900 text-base">🏕️ Step 5: Resting & Wild Encounters</h4>
-                    <p>Use the <strong>🏥 Pokécenter Party Rest</strong> button at the top to instantly restore 100% HP, Move PP, and clear Status Conditions for everyone after a long rest, or use ⛺ Hit Dice on individual Pokémon cards for short rests. Use the <strong>🌿 Wild Encounter & Biomes</strong> panel to filter wild Pokémon by Biome and SR, roll Shinys (1%), and calculate live Pokéball Capture DCs!</p>
+                    <h4 class="font-extrabold text-gray-900 text-base text-red-600">Part 5: Resting, Healing & Leveling Up</h4>
+                    <p>
+                        • <strong>Short Rest (1 Hour):</strong> Pokémon can click <strong>⛺ Hit Die</strong> to spend Hit Dice + CON mod and heal mid-adventure.<br>
+                        • <strong>Long Rest / Pokécenter:</strong> Click the top-header <strong>🏥 Pokécenter Party Rest</strong> button to fully restore 100% HP, Move PP, and clear Status Conditions for every trainer and Pokémon in the campaign.
+                    </p>
                 </div>
+
             </div>
         </div>
     </div>
