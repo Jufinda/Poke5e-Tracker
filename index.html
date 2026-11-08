@@ -883,18 +883,24 @@
         let roomName = "";
         let roomHostId = null;
         let battlefieldEnv = { weather: "Clear", terrain: "Normal" };
-        let eli5State = {
-            title: "Ready for the Next Turn!",
-            steps: "Pick whose turn it is! Click the blue 🎲 button next to any Pokémon's move, pick who they are attacking in the Target dropdown, and click ⚔️ Execute Move.",
-            attacker: "Waiting...",
-            move: "➔ MOVE ➔",
-            result: "Select a move",
-            target: "Waiting..."
-        };
+        function getDefaultEli5State() {
+            return {
+                title: "Ready for the Next Turn!",
+                steps: "👉 <strong>What to do now:</strong> Pick whose turn it is! Click the blue <strong>🎲</strong> button next to any Pokémon's move, pick who they are attacking in the <strong>Target</strong> dropdown, and click <strong>⚔️ Execute Move</strong>. The tracker will roll the dice, check if it hits, and subtract the HP for you automatically!",
+                attacker: "Waiting...",
+                move: "➔ MOVE ➔",
+                result: "Select a move",
+                target: "Waiting..."
+            };
+        }
+        let eli5State = getDefaultEli5State();
         let eli5Enabled = localStorage.getItem('poke5e_eli5') !== '0';
         let mapTokens = [];
         let selectedMapTokenId = null;
         let autoSaveTimeout = null;
+        let hasPendingLocalSave = false;
+        let lastLocalSaveTimestamp = 0;
+        let listenersBound = false;
         let currentRoomCode = null;
         let roomUnsubscribe = null;
         let heartbeatInterval = null;
@@ -903,6 +909,21 @@
         let isGameMaster = false;
         let currentWildEncounter = null;
         let isLogExpanded = false;
+
+        function resetLocalSessionVariables() {
+            if (autoSaveTimeout) { clearTimeout(autoSaveTimeout); autoSaveTimeout = null; }
+            hasPendingLocalSave = false;
+            appState = [];
+            diceLog = [];
+            sessionPlayers = [];
+            battlefieldEnv = { weather: "Clear", terrain: "Normal" };
+            eli5State = getDefaultEli5State();
+            currentWildEncounter = null;
+            mapTokens = [];
+            selectedMapTokenId = null;
+            updateEli5Banner(eli5State);
+            renderWildEncounterCard();
+        }
 
         setTimeout(() => {
             const nameInput = document.getElementById('player-name');
@@ -1144,6 +1165,7 @@
         async function hostGame() {
             if (!db) { displayCustomToast("⚠️", "Database not ready."); return; }
             savePlayerName();
+            resetLocalSessionVariables();
             const customNameInput = document.getElementById('room-custom-name');
             const customRoomTitle = (customNameInput && customNameInput.value.trim()) ? customNameInput.value.trim() : `${localPlayerName}'s Campaign`;
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -1157,8 +1179,10 @@
                     trainers: [getNewTrainer()], 
                     diceLog: initialLog,
                     participants: initialParticipants,
-                    environment: battlefieldEnv,
-                    eli5State: eli5State
+                    environment: { weather: "Clear", terrain: "Normal" },
+                    eli5State: getDefaultEli5State(),
+                    wildEncounter: null,
+                    mapTokens: []
                 });
                 joinRoom(code);
             } catch(e) {
@@ -1170,6 +1194,7 @@
 
         async function enterDevSandbox() {
             if (!db) { displayCustomToast("⚠️", "Database not ready."); return; }
+            resetLocalSessionVariables();
             const nameInput = document.getElementById('player-name');
             const codeInput = document.getElementById('join-code');
             if (nameInput) nameInput.value = 'Admin';
@@ -1206,8 +1231,10 @@
                         trainers: [t1, t2],
                         diceLog: [`<span class="text-purple-600 font-bold">🧪 Dev Sandbox (TEST) initialized by Admin!</span>`],
                         participants: [{ id: localClientId, name: 'Admin', role: 'GM', online: true, lastSeen: Date.now() }],
-                        environment: battlefieldEnv,
-                        eli5State: eli5State
+                        environment: { weather: "Clear", terrain: "Normal" },
+                        eli5State: getDefaultEli5State(),
+                        wildEncounter: null,
+                        mapTokens: []
                     });
                 } else {
                     await setDoc(roomRef, { hostId: localClientId }, { merge: true });
@@ -1244,6 +1271,7 @@
                 const roomSnap = await getDoc(roomRef);
                 
                 if (roomSnap.exists()) {
+                    resetLocalSessionVariables();
                     const data = roomSnap.data();
                     currentRoomCode = code;
                     roomName = data.roomName || `Room ${code}`;
@@ -1254,6 +1282,165 @@
                         const gmEntry = participants.find(p => p.role === 'GM');
                         if (!gmEntry || gmEntry.name.toLowerCase() === localPlayerName.toLowerCase()) roomHostId = localClientId;
                     }
+                    isGameMaster = (roomHostId === localClientId);
+
+                    let myEntry = participants.find(p => p.id === localClientId);
+                    if (myEntry) {
+                        myEntry.name = localPlayerName;
+                        myEntry.role = isGameMaster ? 'GM' : 'Player';
+                        myEntry.online = true;
+                        myEntry.lastSeen = Date.now();
+                    } else {
+                        participants.push({ id: localClientId, name: localPlayerName, role: isGameMaster ? 'GM' : 'Player', online: true, lastSeen: Date.now() });
+                    }
+
+                    sessionPlayers = participants;
+                    appState = data.trainers || [];
+                    diceLog = data.diceLog || [];
+                    battlefieldEnv = data.environment || { weather: "Clear", terrain: "Normal" };
+                    eli5State = data.eli5State || getDefaultEli5State();
+                    currentWildEncounter = data.wildEncounter || null;
+                    mapTokens = Array.isArray(data.mapTokens) ? data.mapTokens : [];
+
+                    updateEli5Banner(eli5State);
+                    renderWildEncounterCard();
+
+                    document.getElementById('lobby-screen').classList.add('hidden');
+                    document.getElementById('active-game-header').classList.remove('hidden');
+                    document.getElementById('main-content').classList.remove('hidden');
+                    document.getElementById('leave-room-btn').classList.remove('hidden');
+                    document.getElementById('map-toggle-btn').classList.remove('hidden');
+                    document.getElementById('display-room-code').innerText = code;
+                    document.getElementById('display-role').innerText = isGameMaster ? "👑 Game Master (Host)" : "🛡️ Player (Live Battle & Roller)";
+                    
+                    const roomNameInput = document.getElementById('active-room-name-input');
+                    if (roomNameInput) { roomNameInput.value = roomName; roomNameInput.disabled = !isGameMaster; }
+
+                    const gmButtons = ['add-trainer-btn', 'reset-btn', 'export-btn', 'import-label', 'encounter-toggle-btn', 'party-rest-btn', 'bridge-btn'];
+                    gmButtons.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.classList.toggle('hidden', !isGameMaster);
+                    });
+
+                    saveRoomToHistory(code, roomName, isGameMaster);
+
+                    await setDoc(roomRef, { roomName, hostId: roomHostId, participants: sessionPlayers }, { merge: true });
+
+                    if (roomUnsubscribe) roomUnsubscribe();
+                    roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
+                        if (!snapshot.exists()) return;
+                        const sData = snapshot.data();
+
+                        // Always keep active participants list fresh
+                        sessionPlayers = normalizeParticipants(sData);
+                        renderPlayers();
+
+                        // Prevent Firestore echo or heartbeat snapshots from undoing local edits in progress!
+                        if (hasPendingLocalSave || (Date.now() - lastLocalSaveTimestamp < 900)) {
+                            return;
+                        }
+
+                        isSyncing = true;
+                        appState = sData.trainers || [];
+                        diceLog = sData.diceLog || [];
+                        roomName = sData.roomName || `Room ${code}`;
+                        battlefieldEnv = sData.environment || { weather: "Clear", terrain: "Normal" };
+                        eli5State = sData.eli5State || getDefaultEli5State();
+                        currentWildEncounter = sData.wildEncounter || null;
+                        mapTokens = Array.isArray(sData.mapTokens) ? sData.mapTokens : [];
+
+                        updateEli5Banner(eli5State);
+                        renderWildEncounterCard();
+                        renderBattleMap();
+                        renderEnvironmentBanner();
+
+                        // Preserve focus & cursor position if user is actively typing in an input
+                        const activeEl = document.activeElement;
+                        const isTypingInApp = activeEl && document.getElementById('app')?.contains(activeEl) && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+                        if (!isTypingInApp) {
+                            render();
+                        }
+                        renderDiceLog();
+                        setTimeout(() => isSyncing = false, 80);
+                    });
+
+                    if (heartbeatInterval) clearInterval(heartbeatInterval);
+                    heartbeatInterval = setInterval(() => sendPresenceHeartbeat(true), 25000);
+                    
+                    setupEventListeners();
+                    render();
+                    renderDiceLog();
+                    renderPlayers();
+                    if (mapTokens.length === 0) syncTokensFromParty();
+                } else {
+                    errorEl.innerText = "Room not found! Check the 4-letter code.";
+                    errorEl.classList.remove('hidden');
+                }
+            } catch(e) {
+                errorEl.innerText = "Database connection error: " + e.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        async function sendPresenceHeartbeat(isOnline = true) {
+            if (!currentRoomCode || !db || hasPendingLocalSave) return;
+            const me = sessionPlayers.find(p => p.id === localClientId);
+            if (me) { me.online = isOnline; me.lastSeen = Date.now(); me.name = localPlayerName; }
+            try { await setDoc(doc(db, "rooms", currentRoomCode), { participants: sessionPlayers }, { merge: true }); } catch (e) {}
+        }
+
+        async function leaveRoom() {
+            if (!currentRoomCode) return;
+            if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+            if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+            const leavingCode = currentRoomCode;
+            const me = sessionPlayers.find(p => p.id === localClientId);
+            if (me) { me.online = false; me.lastSeen = Date.now(); }
+            try { await setDoc(doc(db, "rooms", leavingCode), { participants: sessionPlayers }, { merge: true }); } catch (e) {}
+            currentRoomCode = null;
+            resetLocalSessionVariables();
+            document.getElementById('active-game-header').classList.add('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('leave-room-btn').classList.add('hidden');
+            document.getElementById('encounter-panel').classList.add('hidden');
+            document.getElementById('battle-map-panel').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            renderRoomHistory();
+        }
+
+        function updateRoomName(newVal) {
+            if (!isGameMaster || !currentRoomCode) return;
+            roomName = (newVal || '').trim() || `Room ${currentRoomCode}`;
+            saveRoomToHistory(currentRoomCode, roomName, isGameMaster);
+            saveData(true);
+        }
+
+        // Allows both GM and Players to push combat actions, PP reductions, and HP damage to Firestore without echo-undoing!
+        function saveData(silent = false, allowPlayerCombatSync = false) {
+            if (!currentRoomCode || isSyncing) return;
+            if (!isGameMaster && !allowPlayerCombatSync) return;
+            hasPendingLocalSave = false;
+            lastLocalSaveTimestamp = Date.now();
+            setDoc(doc(db, "rooms", currentRoomCode), { 
+                roomName: roomName || `Room ${currentRoomCode}`,
+                hostId: roomHostId || localClientId,
+                trainers: appState, 
+                diceLog: diceLog,
+                participants: sessionPlayers,
+                environment: battlefieldEnv,
+                eli5State: eli5State,
+                wildEncounter: currentWildEncounter || null,
+                mapTokens: mapTokens
+            }, { merge: true });
+            if (!silent) displayToast();
+        }
+
+        function debouncedSave() {
+            hasPendingLocalSave = true;
+            lastLocalSaveTimestamp = Date.now();
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => saveData(true, true), 350);
+        }
                     isGameMaster = (roomHostId === localClientId);
 
                     let myEntry = participants.find(p => p.id === localClientId);
@@ -2517,7 +2704,11 @@
 
         function renderWildEncounterCard() {
             const box = document.getElementById('wild-result-box');
-            if (!currentWildEncounter || !box) return;
+            if (!box) return;
+            if (!currentWildEncounter || !currentWildEncounter.species) {
+                box.innerHTML = `<div class="text-xs text-slate-300 italic py-4 text-center w-full">Click <strong>"🎲 Spawn Wild"</strong> above to generate a live wild Pokémon that can battle your party!</div>`;
+                return;
+            }
             const w = currentWildEncounter;
             if (!w.ballName) w.ballName = "Poké Ball";
             const catchDC = calculateCatchDC(w);
@@ -2841,7 +3032,33 @@
         }
 
         function setupEventListeners() {
-            document.getElementById('app').addEventListener('change', (e) => {
+            if (listenersBound) return;
+            listenersBound = true;
+            const appEl = document.getElementById('app');
+
+            // Update state immediately on 'input' so typing or clicking arrows is never lost or undone by incoming snapshots
+            appEl.addEventListener('input', (e) => {
+                const target = e.target;
+                if (!target.dataset.field) return;
+                const { tindex, pindex, mindex, field, type } = target.dataset;
+                if (field === 'species' || field === 'level' || field === 'nature') return; // Handled on 'change'
+                const value = target.type === 'number' ? Number(target.value) : target.value;
+
+                if (mindex !== undefined) {
+                    appState[tindex].pokemon[pindex].moves[mindex][field] = value;
+                } else if (pindex !== undefined) {
+                    const poke = appState[tindex].pokemon[pindex];
+                    if (type === 'pstat') poke.attributes[field] = value;
+                    else poke[field] = value;
+                } else if (type === 'stat') {
+                    appState[tindex].stats[field] = value;
+                } else {
+                    appState[tindex][field] = value;
+                }
+                debouncedSave();
+            });
+
+            appEl.addEventListener('change', (e) => {
                 const target = e.target;
                 if (!target.dataset.field) return;
                 const { tindex, pindex, mindex, field, type } = target.dataset;
@@ -2863,7 +3080,6 @@
                             const found = lookupPokemon(value);
                             if (found) { populatePokemonFromRepo(poke, found, poke.level); saveData(true, true); render(); return; }
                         } else if (field === 'level') {
-                            // Automatically scale HP, attributes, and new level-up moves when Level changes!
                             recalculatePokemonLevelStats(poke, value);
                             saveData(true, true);
                             render();
@@ -2879,7 +3095,7 @@
                 } else {
                     appState[tindex][field] = value;
                 }
-                debouncedSave();
+                saveData(true, true);
             });
         }
 
@@ -3284,14 +3500,14 @@
         function displayCustomToast(icon, text) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-icon').innerText = icon;
-            document.getElementById('toast-text').innerText = text;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2600);
+        function executeClear() {
+            resetLocalSessionVariables();
+            appState = [getNewTrainer()];
+            saveData(true);
+            closeModal();
+            render();
+            renderDiceLog();
         }
-
-        function confirmClear() { if (!isGameMaster) return; document.getElementById('modal-backdrop').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('modal-backdrop').classList.add('hidden'); }
-        function executeClear() { appState = []; diceLog = []; saveData(true); closeModal(); addTrainer(); }
 
         // Attach all handlers to window
         Object.assign(window, {
