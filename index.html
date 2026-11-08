@@ -152,7 +152,7 @@
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Campaign / Room Name (Optional for Host)</label>
                 <input type="text" id="room-custom-name" placeholder="e.g. Kanto Gym Challenge" class="w-full border-2 border-gray-300 rounded-lg p-2.5 font-semibold text-sm focus:border-red-500 focus:outline-none">
             </div>
-            <button onclick="hostGame()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">
+            <button id="btn-host-game" onclick="window.hostGame && window.hostGame()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">
                 👑 Host New Game (Game Master Control)
             </button>
             <div class="relative flex py-2 items-center">
@@ -162,12 +162,12 @@
             </div>
             <div class="flex items-stretch gap-2 w-full">
                 <input type="text" id="join-code" placeholder="CODE" class="flex-1 min-w-0 border-2 border-gray-300 rounded-lg p-3 text-center uppercase font-bold text-xl focus:border-blue-500 focus:outline-none" maxlength="4">
-                <button onclick="joinGameBtn()" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg shadow transition whitespace-nowrap">
+                <button id="btn-join-game" onclick="window.joinGameBtn && window.joinGameBtn()" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-lg shadow transition whitespace-nowrap">
                     Join Room
                 </button>
             </div>
             <div class="pt-3 border-t border-dashed border-gray-200">
-                <button onclick="enterDevSandbox()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition text-xs flex items-center justify-center gap-1.5">
+                <button id="btn-dev-sandbox" onclick="window.enterDevSandbox && window.enterDevSandbox()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition text-xs flex items-center justify-center gap-1.5">
                     🧪 Launch Dev Sandbox (Admin • Room: TEST)
                 </button>
                 <p class="text-[10px] text-gray-400 mt-1">Or type Name: <strong>Admin</strong> & Code: <strong>TEST</strong> and click Join Room.</p>
@@ -678,6 +678,14 @@
             console.warn("Firebase init failed:", e);
         }
 
+        // Helper to prevent Firestore calls from hanging forever if offline or blocked by API Key HTTP Referrer restrictions
+        function withTimeout(promise, ms = 3500) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), ms))
+            ]);
+        }
+
         const FORK_RAW_BASE = "https://raw.githubusercontent.com/Jufinda/poke5e/main/static/data";
         const FALLBACK_RAW_BASE = "https://raw.githubusercontent.com/Auroratide/poke5e/main/static/data";
 
@@ -1162,38 +1170,55 @@
             }
         }
 
+        function saveLocalRoomCache(code, payload) {
+            try {
+                const existing = getLocalRoomCache(code) || {};
+                localStorage.setItem('poke5e_room_cache_' + code, JSON.stringify({ ...existing, ...payload }));
+            } catch (e) {}
+        }
+
+        function getLocalRoomCache(code) {
+            try {
+                const raw = localStorage.getItem('poke5e_room_cache_' + code);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+
         async function hostGame() {
-            if (!db) { displayCustomToast("⚠️", "Database not ready."); return; }
             savePlayerName();
             resetLocalSessionVariables();
             const customNameInput = document.getElementById('room-custom-name');
             const customRoomTitle = (customNameInput && customNameInput.value.trim()) ? customNameInput.value.trim() : `${localPlayerName}'s Campaign`;
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             
-            try {
-                const initialLog = [`<span class="text-red-600 font-bold">👑 ${localPlayerName} started "${customRoomTitle}" as Game Master!</span>`];
-                const initialParticipants = [{ id: localClientId, name: localPlayerName, role: 'GM', online: true, lastSeen: Date.now() }];
-                await setDoc(doc(db, "rooms", code), {
-                    roomName: customRoomTitle,
-                    hostId: localClientId,
-                    trainers: [getNewTrainer()], 
-                    diceLog: initialLog,
-                    participants: initialParticipants,
-                    environment: { weather: "Clear", terrain: "Normal" },
-                    eli5State: getDefaultEli5State(),
-                    wildEncounter: null,
-                    mapTokens: []
-                });
-                joinRoom(code);
-            } catch(e) {
-                const errorEl = document.getElementById('lobby-error');
-                errorEl.innerText = "Error: " + e.message;
-                errorEl.classList.remove('hidden');
+            const initialLog = [`<span class="text-red-600 font-bold">👑 ${localPlayerName} started "${customRoomTitle}" as Game Master!</span>`];
+            const initialParticipants = [{ id: localClientId, name: localPlayerName, role: 'GM', online: true, lastSeen: Date.now() }];
+            const roomPayload = {
+                roomName: customRoomTitle,
+                hostId: localClientId,
+                trainers: [getNewTrainer()], 
+                diceLog: initialLog,
+                participants: initialParticipants,
+                environment: { weather: "Clear", terrain: "Normal" },
+                eli5State: getDefaultEli5State(),
+                wildEncounter: null,
+                mapTokens: []
+            };
+
+            saveLocalRoomCache(code, roomPayload);
+
+            if (db) {
+                try {
+                    await withTimeout(setDoc(doc(db, "rooms", code), roomPayload));
+                } catch(e) {
+                    console.warn("Firestore hostGame fallback to local cache:", e);
+                    displayCustomToast("⚠️", "Cloud restricted/offline — running in Local Mode");
+                }
             }
+            await joinRoom(code, roomPayload);
         }
 
         async function enterDevSandbox() {
-            if (!db) { displayCustomToast("⚠️", "Database not ready."); return; }
             resetLocalSessionVariables();
             const nameInput = document.getElementById('player-name');
             const codeInput = document.getElementById('join-code');
@@ -1203,139 +1228,177 @@
             localStorage.setItem('poke5e_player_name', 'Admin');
 
             const code = 'TEST';
-            try {
-                const roomRef = doc(db, "rooms", code);
-                const snap = await getDoc(roomRef);
-                if (!snap.exists()) {
-                    const t1 = getNewTrainer();
-                    t1.name = "Red (Player)";
-                    t1.path = "Ace Trainer";
-                    t1.inventoryList = [
-                        { name: 'Poké Ball', type: 'Pokéball', qty: 10 },
-                        { name: 'Great Ball', type: 'Pokéball', qty: 5 },
-                        { name: 'Potion', type: 'Medicine', qty: 5 },
-                        { name: 'Super Potion', type: 'Medicine', qty: 3 }
-                    ];
-                    const t2 = getNewTrainer();
-                    t2.name = "Gym Leader Brock";
-                    t2.path = "Commander";
-                    if (poke5eDB.loaded) {
-                        const p1 = lookupPokemon('Charmander');
-                        if (p1) populatePokemonFromRepo(t1.pokemon[0], p1, 5);
-                        const p2 = lookupPokemon('Grimer');
-                        if (p2) populatePokemonFromRepo(t2.pokemon[0], p2, 5);
-                    }
-                    await setDoc(roomRef, {
-                        roomName: "🧪 Dev Sandbox Instance",
-                        hostId: localClientId,
-                        trainers: [t1, t2],
-                        diceLog: [`<span class="text-purple-600 font-bold">🧪 Dev Sandbox (TEST) initialized by Admin!</span>`],
-                        participants: [{ id: localClientId, name: 'Admin', role: 'GM', online: true, lastSeen: Date.now() }],
-                        environment: { weather: "Clear", terrain: "Normal" },
-                        eli5State: getDefaultEli5State(),
-                        wildEncounter: null,
-                        mapTokens: []
-                    });
-                } else {
-                    await setDoc(roomRef, { hostId: localClientId }, { merge: true });
+            const buildDefaultSandboxPayload = () => {
+                const t1 = getNewTrainer();
+                t1.name = "Red (Player)";
+                t1.path = "Ace Trainer";
+                t1.inventoryList = [
+                    { name: 'Poké Ball', type: 'Pokéball', qty: 10 },
+                    { name: 'Great Ball', type: 'Pokéball', qty: 5 },
+                    { name: 'Potion', type: 'Medicine', qty: 5 },
+                    { name: 'Super Potion', type: 'Medicine', qty: 3 }
+                ];
+                const t2 = getNewTrainer();
+                t2.name = "Gym Leader Brock";
+                t2.path = "Commander";
+                if (poke5eDB.loaded) {
+                    const p1 = lookupPokemon('Charmander');
+                    if (p1) populatePokemonFromRepo(t1.pokemon[0], p1, 5);
+                    const p2 = lookupPokemon('Grimer');
+                    if (p2) populatePokemonFromRepo(t2.pokemon[0], p2, 5);
                 }
-                await joinRoom(code);
-                displayCustomToast("🧪", "Entered Dev Sandbox (TEST)");
-            } catch (e) {
-                const errorEl = document.getElementById('lobby-error');
-                if (errorEl) { errorEl.innerText = "Sandbox Error: " + e.message; errorEl.classList.remove('hidden'); }
+                return {
+                    roomName: "🧪 Dev Sandbox Instance",
+                    hostId: localClientId,
+                    trainers: [t1, t2],
+                    diceLog: [`<span class="text-purple-600 font-bold">🧪 Dev Sandbox (TEST) initialized by Admin!</span>`],
+                    participants: [{ id: localClientId, name: 'Admin', role: 'GM', online: true, lastSeen: Date.now() }],
+                    environment: { weather: "Clear", terrain: "Normal" },
+                    eli5State: getDefaultEli5State(),
+                    wildEncounter: null,
+                    mapTokens: []
+                };
+            };
+
+            let fallbackData = getLocalRoomCache(code) || buildDefaultSandboxPayload();
+            fallbackData.hostId = localClientId;
+            saveLocalRoomCache(code, fallbackData);
+
+            if (db) {
+                try {
+                    const roomRef = doc(db, "rooms", code);
+                    const snap = await withTimeout(getDoc(roomRef));
+                    if (!snap.exists()) {
+                        await withTimeout(setDoc(roomRef, fallbackData));
+                    } else {
+                        await withTimeout(setDoc(roomRef, { hostId: localClientId }, { merge: true }));
+                    }
+                } catch (e) {
+                    console.warn("Sandbox using local mode fallback:", e);
+                }
             }
+            await joinRoom(code, fallbackData);
+            displayCustomToast("🧪", "Entered Dev Sandbox (TEST)");
         }
 
         function joinGameBtn() {
             savePlayerName();
-            const code = document.getElementById('join-code').value.trim().toUpperCase();
+            const codeInput = document.getElementById('join-code');
+            const code = (codeInput ? codeInput.value : '').trim().toUpperCase();
             if (code === 'TEST' && localPlayerName.trim().toLowerCase() === 'admin') {
                 enterDevSandbox();
                 return;
             }
-            if (code.length === 4) joinRoom(code);
+            if (code.length === 4) {
+                joinRoom(code);
+            } else {
+                const errorEl = document.getElementById('lobby-error');
+                if (errorEl) {
+                    errorEl.innerText = "Please enter a 4-character Room Code first!";
+                    errorEl.classList.remove('hidden');
+                }
+            }
         }
 
         function normalizeParticipants(rawData) {
             return Array.isArray(rawData.participants) ? [...rawData.participants] : [];
         }
 
-        async function joinRoom(code) {
-            if (!db) return;
+        async function joinRoom(code, fallbackPayload = null) {
             const errorEl = document.getElementById('lobby-error');
-            errorEl.classList.add('hidden');
+            if (errorEl) errorEl.classList.add('hidden');
             
+            let data = null;
+            let roomRef = db ? doc(db, "rooms", code) : null;
+
+            if (roomRef) {
+                try {
+                    const roomSnap = await withTimeout(getDoc(roomRef));
+                    if (roomSnap.exists()) {
+                        data = roomSnap.data();
+                    }
+                } catch (e) {
+                    console.warn("Firestore joinRoom read failed or timed out, checking local fallback:", e);
+                }
+            }
+
+            if (!data) {
+                data = fallbackPayload || getLocalRoomCache(code);
+            }
+
+            if (!data) {
+                if (errorEl) {
+                    errorEl.innerText = "Room not found! Check the 4-letter code (or if you restricted your Firebase API Key in Google Cloud, make sure your current website URL is allowed).";
+                    errorEl.classList.remove('hidden');
+                }
+                return;
+            }
+
             try {
-                const roomRef = doc(db, "rooms", code);
-                const roomSnap = await getDoc(roomRef);
+                resetLocalSessionVariables();
+                currentRoomCode = code;
+                roomName = data.roomName || `Room ${code}`;
+                roomHostId = data.hostId || null;
+
+                let participants = normalizeParticipants(data);
+                if (!roomHostId) {
+                    const gmEntry = participants.find(p => p.role === 'GM');
+                    if (!gmEntry || gmEntry.name.toLowerCase() === localPlayerName.toLowerCase()) roomHostId = localClientId;
+                }
+                isGameMaster = (roomHostId === localClientId);
+
+                let myEntry = participants.find(p => p.id === localClientId);
+                if (myEntry) {
+                    myEntry.name = localPlayerName;
+                    myEntry.role = isGameMaster ? 'GM' : 'Player';
+                    myEntry.online = true;
+                    myEntry.lastSeen = Date.now();
+                } else {
+                    participants.push({ id: localClientId, name: localPlayerName, role: isGameMaster ? 'GM' : 'Player', online: true, lastSeen: Date.now() });
+                }
+
+                sessionPlayers = participants;
+                appState = data.trainers || [];
+                diceLog = data.diceLog || [];
+                battlefieldEnv = data.environment || { weather: "Clear", terrain: "Normal" };
+                eli5State = data.eli5State || getDefaultEli5State();
+                currentWildEncounter = data.wildEncounter || null;
+                mapTokens = Array.isArray(data.mapTokens) ? data.mapTokens : [];
+
+                updateEli5Banner(eli5State);
+                renderWildEncounterCard();
+
+                document.getElementById('lobby-screen').classList.add('hidden');
+                document.getElementById('active-game-header').classList.remove('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                document.getElementById('leave-room-btn').classList.remove('hidden');
+                document.getElementById('map-toggle-btn').classList.remove('hidden');
+                document.getElementById('display-room-code').innerText = code;
+                document.getElementById('display-role').innerText = isGameMaster ? "👑 Game Master (Host)" : "🛡️ Player (Live Battle & Roller)";
                 
-                if (roomSnap.exists()) {
-                    resetLocalSessionVariables();
-                    const data = roomSnap.data();
-                    currentRoomCode = code;
-                    roomName = data.roomName || `Room ${code}`;
-                    roomHostId = data.hostId || null;
+                const roomNameInput = document.getElementById('active-room-name-input');
+                if (roomNameInput) { roomNameInput.value = roomName; roomNameInput.disabled = !isGameMaster; }
 
-                    let participants = normalizeParticipants(data);
-                    if (!roomHostId) {
-                        const gmEntry = participants.find(p => p.role === 'GM');
-                        if (!gmEntry || gmEntry.name.toLowerCase() === localPlayerName.toLowerCase()) roomHostId = localClientId;
-                    }
-                    isGameMaster = (roomHostId === localClientId);
+                const gmButtons = ['add-trainer-btn', 'reset-btn', 'export-btn', 'import-label', 'encounter-toggle-btn', 'party-rest-btn', 'bridge-btn'];
+                gmButtons.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.toggle('hidden', !isGameMaster);
+                });
 
-                    let myEntry = participants.find(p => p.id === localClientId);
-                    if (myEntry) {
-                        myEntry.name = localPlayerName;
-                        myEntry.role = isGameMaster ? 'GM' : 'Player';
-                        myEntry.online = true;
-                        myEntry.lastSeen = Date.now();
-                    } else {
-                        participants.push({ id: localClientId, name: localPlayerName, role: isGameMaster ? 'GM' : 'Player', online: true, lastSeen: Date.now() });
-                    }
+                saveRoomToHistory(code, roomName, isGameMaster);
+                saveLocalRoomCache(code, { ...data, roomName, hostId: roomHostId, participants: sessionPlayers });
 
-                    sessionPlayers = participants;
-                    appState = data.trainers || [];
-                    diceLog = data.diceLog || [];
-                    battlefieldEnv = data.environment || { weather: "Clear", terrain: "Normal" };
-                    eli5State = data.eli5State || getDefaultEli5State();
-                    currentWildEncounter = data.wildEncounter || null;
-                    mapTokens = Array.isArray(data.mapTokens) ? data.mapTokens : [];
-
-                    updateEli5Banner(eli5State);
-                    renderWildEncounterCard();
-
-                    document.getElementById('lobby-screen').classList.add('hidden');
-                    document.getElementById('active-game-header').classList.remove('hidden');
-                    document.getElementById('main-content').classList.remove('hidden');
-                    document.getElementById('leave-room-btn').classList.remove('hidden');
-                    document.getElementById('map-toggle-btn').classList.remove('hidden');
-                    document.getElementById('display-room-code').innerText = code;
-                    document.getElementById('display-role').innerText = isGameMaster ? "👑 Game Master (Host)" : "🛡️ Player (Live Battle & Roller)";
-                    
-                    const roomNameInput = document.getElementById('active-room-name-input');
-                    if (roomNameInput) { roomNameInput.value = roomName; roomNameInput.disabled = !isGameMaster; }
-
-                    const gmButtons = ['add-trainer-btn', 'reset-btn', 'export-btn', 'import-label', 'encounter-toggle-btn', 'party-rest-btn', 'bridge-btn'];
-                    gmButtons.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.classList.toggle('hidden', !isGameMaster);
-                    });
-
-                    saveRoomToHistory(code, roomName, isGameMaster);
-
-                    await setDoc(roomRef, { roomName, hostId: roomHostId, participants: sessionPlayers }, { merge: true });
+                if (roomRef) {
+                    setDoc(roomRef, { roomName, hostId: roomHostId, participants: sessionPlayers }, { merge: true }).catch(() => {});
 
                     if (roomUnsubscribe) roomUnsubscribe();
                     roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
                         if (!snapshot.exists()) return;
                         const sData = snapshot.data();
 
-                        // Always keep active participants list fresh
                         sessionPlayers = normalizeParticipants(sData);
                         renderPlayers();
 
-                        // Prevent Firestore echo or heartbeat snapshots from undoing local edits in progress!
                         if (hasPendingLocalSave || (Date.now() - lastLocalSaveTimestamp < 900)) {
                             return;
                         }
@@ -1349,12 +1412,12 @@
                         currentWildEncounter = sData.wildEncounter || null;
                         mapTokens = Array.isArray(sData.mapTokens) ? sData.mapTokens : [];
 
+                        saveLocalRoomCache(code, sData);
                         updateEli5Banner(eli5State);
                         renderWildEncounterCard();
                         renderBattleMap();
                         renderEnvironmentBanner();
 
-                        // Preserve focus & cursor position if user is actively typing in an input
                         const activeEl = document.activeElement;
                         const isTypingInApp = activeEl && document.getElementById('app')?.contains(activeEl) && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
                         if (!isTypingInApp) {
@@ -1362,23 +1425,24 @@
                         }
                         renderDiceLog();
                         setTimeout(() => isSyncing = false, 80);
+                    }, (err) => {
+                        console.warn("Firestore snapshot listener warning:", err);
                     });
+                }
 
-                    if (heartbeatInterval) clearInterval(heartbeatInterval);
-                    heartbeatInterval = setInterval(() => sendPresenceHeartbeat(true), 25000);
-                    
-                    setupEventListeners();
-                    render();
-                    renderDiceLog();
-                    renderPlayers();
-                    if (mapTokens.length === 0) syncTokensFromParty();
-                } else {
-                    errorEl.innerText = "Room not found! Check the 4-letter code.";
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
+                heartbeatInterval = setInterval(() => sendPresenceHeartbeat(true), 25000);
+                
+                setupEventListeners();
+                render();
+                renderDiceLog();
+                renderPlayers();
+                if (mapTokens.length === 0) syncTokensFromParty();
+            } catch(e) {
+                if (errorEl) {
+                    errorEl.innerText = "Error opening room: " + e.message;
                     errorEl.classList.remove('hidden');
                 }
-            } catch(e) {
-                errorEl.innerText = "Database connection error: " + e.message;
-                errorEl.classList.remove('hidden');
             }
         }
 
@@ -1421,7 +1485,7 @@
             if (!isGameMaster && !allowPlayerCombatSync) return;
             hasPendingLocalSave = false;
             lastLocalSaveTimestamp = Date.now();
-            setDoc(doc(db, "rooms", currentRoomCode), { 
+            const payload = { 
                 roomName: roomName || `Room ${currentRoomCode}`,
                 hostId: roomHostId || localClientId,
                 trainers: appState, 
@@ -1431,7 +1495,11 @@
                 eli5State: eli5State,
                 wildEncounter: currentWildEncounter || null,
                 mapTokens: mapTokens
-            }, { merge: true });
+            };
+            saveLocalRoomCache(currentRoomCode, payload);
+            if (db) {
+                setDoc(doc(db, "rooms", currentRoomCode), payload, { merge: true }).catch(() => {});
+            }
             if (!silent) displayToast();
         }
 
