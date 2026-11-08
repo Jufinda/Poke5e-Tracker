@@ -1441,135 +1441,6 @@
             clearTimeout(autoSaveTimeout);
             autoSaveTimeout = setTimeout(() => saveData(true, true), 350);
         }
-                    isGameMaster = (roomHostId === localClientId);
-
-                    let myEntry = participants.find(p => p.id === localClientId);
-                    if (myEntry) {
-                        myEntry.name = localPlayerName;
-                        myEntry.role = isGameMaster ? 'GM' : 'Player';
-                        myEntry.online = true;
-                        myEntry.lastSeen = Date.now();
-                    } else {
-                        participants.push({ id: localClientId, name: localPlayerName, role: isGameMaster ? 'GM' : 'Player', online: true, lastSeen: Date.now() });
-                    }
-
-                    sessionPlayers = participants;
-                    appState = data.trainers || [];
-                    diceLog = data.diceLog || [];
-                    battlefieldEnv = data.environment || { weather: "Clear", terrain: "Normal" };
-                    if (data.eli5State) eli5State = data.eli5State;
-                    if (data.wildEncounter) currentWildEncounter = data.wildEncounter;
-                    if (Array.isArray(data.mapTokens)) mapTokens = data.mapTokens;
-
-                    document.getElementById('lobby-screen').classList.add('hidden');
-                    document.getElementById('active-game-header').classList.remove('hidden');
-                    document.getElementById('main-content').classList.remove('hidden');
-                    document.getElementById('leave-room-btn').classList.remove('hidden');
-                    document.getElementById('map-toggle-btn').classList.remove('hidden');
-                    document.getElementById('display-room-code').innerText = code;
-                    document.getElementById('display-role').innerText = isGameMaster ? "👑 Game Master (Host)" : "🛡️ Player (Live Battle & Roller)";
-                    
-                    const roomNameInput = document.getElementById('active-room-name-input');
-                    if (roomNameInput) { roomNameInput.value = roomName; roomNameInput.disabled = !isGameMaster; }
-
-                    const gmButtons = ['add-trainer-btn', 'reset-btn', 'export-btn', 'import-label', 'encounter-toggle-btn', 'party-rest-btn', 'bridge-btn'];
-                    gmButtons.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.classList.toggle('hidden', !isGameMaster);
-                    });
-
-                    saveRoomToHistory(code, roomName, isGameMaster);
-
-                    await setDoc(roomRef, { roomName, hostId: roomHostId, participants: sessionPlayers }, { merge: true });
-
-                    if (roomUnsubscribe) roomUnsubscribe();
-                    roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
-                        if (snapshot.exists()) {
-                            isSyncing = true;
-                            const sData = snapshot.data();
-                            appState = sData.trainers || [];
-                            diceLog = sData.diceLog || [];
-                            sessionPlayers = normalizeParticipants(sData);
-                            roomName = sData.roomName || `Room ${code}`;
-                            battlefieldEnv = sData.environment || { weather: "Clear", terrain: "Normal" };
-                            if (sData.eli5State) { eli5State = sData.eli5State; updateEli5Banner(); }
-                            if (sData.wildEncounter !== undefined) { currentWildEncounter = sData.wildEncounter; renderWildEncounterCard(); }
-                            if (Array.isArray(sData.mapTokens)) { mapTokens = sData.mapTokens; renderBattleMap(); }
-
-                            renderEnvironmentBanner();
-                            render();
-                            renderDiceLog();
-                            renderPlayers();
-                            setTimeout(() => isSyncing = false, 100);
-                        }
-                    });
-
-                    if (heartbeatInterval) clearInterval(heartbeatInterval);
-                    heartbeatInterval = setInterval(() => sendPresenceHeartbeat(true), 20000);
-                    
-                    setupEventListeners();
-                    if (mapTokens.length === 0) syncTokensFromParty();
-                } else {
-                    errorEl.innerText = "Room not found! Check the 4-letter code.";
-                    errorEl.classList.remove('hidden');
-                }
-            } catch(e) {
-                errorEl.innerText = "Database connection error: " + e.message;
-                errorEl.classList.remove('hidden');
-            }
-        }
-
-        async function sendPresenceHeartbeat(isOnline = true) {
-            if (!currentRoomCode || !db) return;
-            const me = sessionPlayers.find(p => p.id === localClientId);
-            if (me) { me.online = isOnline; me.lastSeen = Date.now(); me.name = localPlayerName; }
-            try { await setDoc(doc(db, "rooms", currentRoomCode), { participants: sessionPlayers }, { merge: true }); } catch (e) {}
-        }
-
-        async function leaveRoom() {
-            if (!currentRoomCode) return;
-            if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
-            if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
-            const me = sessionPlayers.find(p => p.id === localClientId);
-            if (me) { me.online = false; me.lastSeen = Date.now(); }
-            try { await setDoc(doc(db, "rooms", currentRoomCode), { participants: sessionPlayers }, { merge: true }); } catch (e) {}
-            currentRoomCode = null;
-            document.getElementById('active-game-header').classList.add('hidden');
-            document.getElementById('main-content').classList.add('hidden');
-            document.getElementById('leave-room-btn').classList.add('hidden');
-            document.getElementById('lobby-screen').classList.remove('hidden');
-            renderRoomHistory();
-        }
-
-        function updateRoomName(newVal) {
-            if (!isGameMaster || !currentRoomCode) return;
-            roomName = (newVal || '').trim() || `Room ${currentRoomCode}`;
-            saveRoomToHistory(currentRoomCode, roomName, isGameMaster);
-            saveData(true);
-        }
-
-        // Allows both GM and Players to push combat actions, PP reductions, and HP damage to Firestore!
-        function saveData(silent = false, allowPlayerCombatSync = false) {
-            if (!currentRoomCode || isSyncing) return;
-            if (!isGameMaster && !allowPlayerCombatSync) return;
-            setDoc(doc(db, "rooms", currentRoomCode), { 
-                roomName: roomName || `Room ${currentRoomCode}`,
-                hostId: roomHostId || localClientId,
-                trainers: appState, 
-                diceLog: diceLog,
-                participants: sessionPlayers,
-                environment: battlefieldEnv,
-                eli5State: eli5State,
-                wildEncounter: currentWildEncounter || null,
-                mapTokens: mapTokens
-            }, { merge: true });
-            if (!silent) displayToast();
-        }
-
-        function debouncedSave() {
-            clearTimeout(autoSaveTimeout);
-            autoSaveTimeout = setTimeout(() => saveData(true, true), 450);
-        }
 
         function updateEnvironment(key, val) {
             if (!isGameMaster) return;
@@ -3500,6 +3371,14 @@
         function displayCustomToast(icon, text) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-text').innerText = text;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function confirmClear() { document.getElementById('modal-backdrop').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal-backdrop').classList.add('hidden'); }
+
         function executeClear() {
             resetLocalSessionVariables();
             appState = [getNewTrainer()];
