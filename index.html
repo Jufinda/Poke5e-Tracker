@@ -891,6 +891,21 @@
         let roomName = "";
         let roomHostId = null;
         let battlefieldEnv = { weather: "Clear", terrain: "Normal" };
+        // --- Safety helpers ---
+        function esc(v) {
+            return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function sanitizeLogHtml(html) {
+            const tpl = document.createElement('template');
+            tpl.innerHTML = String(html ?? '');
+            const allowed = new Set(['SPAN', 'STRONG', 'EM', 'B', 'BR']);
+            tpl.content.querySelectorAll('*').forEach(el => {
+                if (!allowed.has(el.tagName)) { el.replaceWith(document.createTextNode(el.textContent)); return; }
+                [...el.attributes].forEach(a => { if (a.name !== 'class') el.removeAttribute(a.name); });
+            });
+            return tpl.innerHTML;
+        }
+
         function getDefaultEli5State() {
             return {
                 title: "Ready for the Next Turn!",
@@ -985,8 +1000,8 @@
             const mEl = document.getElementById('vis-move');
             const rEl = document.getElementById('vis-result');
             const tgEl = document.getElementById('vis-target');
-            if (tEl) tEl.innerHTML = eli5State.title;
-            if (sEl) sEl.innerHTML = eli5State.steps;
+            if (tEl) tEl.innerHTML = sanitizeLogHtml(eli5State.title);
+            if (sEl) sEl.innerHTML = sanitizeLogHtml(eli5State.steps);
             if (aEl) aEl.innerText = eli5State.attacker;
             if (mEl) mEl.innerText = eli5State.move;
             if (rEl) rEl.innerText = eli5State.result;
@@ -1042,7 +1057,7 @@
                     <div class="min-w-0 pr-2">
                         <div class="flex items-center gap-1.5">
                             <span class="font-mono font-extrabold text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">${r.code}</span>
-                            <strong class="text-xs text-gray-800 truncate">${r.name || `Room ${r.code}`}</strong>
+                            <strong class="text-xs text-gray-800 truncate">${esc(r.name || `Room ${r.code}`)}</strong>
                             <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${r.isHost ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'}">${r.isHost ? '👑 Host' : '🛡️ Player'}</span>
                         </div>
                         <span class="block text-[10px] text-gray-400 mt-0.5">Last joined: ${dateStr}</span>
@@ -1399,12 +1414,21 @@
                         sessionPlayers = normalizeParticipants(sData);
                         renderPlayers();
 
-                        if (hasPendingLocalSave || (Date.now() - lastLocalSaveTimestamp < 900)) {
+                        if (hasPendingLocalSave || snapshot.metadata.hasPendingWrites) {
                             return;
                         }
 
                         isSyncing = true;
-                        appState = sData.trainers || [];
+                        try {
+                        const prevState = appState;   // keep THIS browser's collapsed/expanded choices
+                        appState = (sData.trainers || []).map(t => {
+                            const old = prevState.find(o => o.id === t.id);
+                            return { ...t, collapsed: old ? old.collapsed : t.collapsed,
+                                pokemon: (t.pokemon || []).map(p => {
+                                    const op = old && (old.pokemon || []).find(q => q.id === p.id);
+                                    return { ...p, collapsed: op ? op.collapsed : p.collapsed };
+                                }) };
+                        });
                         diceLog = sData.diceLog || [];
                         roomName = sData.roomName || `Room ${code}`;
                         battlefieldEnv = sData.environment || { weather: "Clear", terrain: "Normal" };
@@ -1424,7 +1448,9 @@
                             render();
                         }
                         renderDiceLog();
-                        setTimeout(() => isSyncing = false, 80);
+                        } finally {
+                            setTimeout(() => isSyncing = false, 80);
+                        }
                     }, (err) => {
                         console.warn("Firestore snapshot listener warning:", err);
                     });
@@ -1450,6 +1476,7 @@
             if (!currentRoomCode || !db || hasPendingLocalSave) return;
             const me = sessionPlayers.find(p => p.id === localClientId);
             if (me) { me.online = isOnline; me.lastSeen = Date.now(); me.name = localPlayerName; }
+            else { sessionPlayers.push({ id: localClientId, name: localPlayerName, role: isGameMaster ? 'GM' : 'Player', online: isOnline, lastSeen: Date.now() }); }
             try { await setDoc(doc(db, "rooms", currentRoomCode), { participants: sessionPlayers }, { merge: true }); } catch (e) {}
         }
 
@@ -1467,6 +1494,9 @@
             document.getElementById('main-content').classList.add('hidden');
             document.getElementById('leave-room-btn').classList.add('hidden');
             document.getElementById('encounter-panel').classList.add('hidden');
+            ['map-toggle-btn','add-trainer-btn','reset-btn','export-btn','import-label','encounter-toggle-btn','party-rest-btn','bridge-btn']
+                .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+            isGameMaster = false;
             document.getElementById('battle-map-panel').classList.add('hidden');
             document.getElementById('lobby-screen').classList.remove('hidden');
             renderRoomHistory();
@@ -1481,7 +1511,8 @@
 
         // Allows both GM and Players to push combat actions, PP reductions, and HP damage to Firestore without echo-undoing!
         function saveData(silent = false, allowPlayerCombatSync = false) {
-            if (!currentRoomCode || isSyncing) return;
+            if (!currentRoomCode) return;
+            if (isSyncing) { setTimeout(() => saveData(silent, allowPlayerCombatSync), 100); return; }
             if (!isGameMaster && !allowPlayerCombatSync) return;
             hasPendingLocalSave = false;
             lastLocalSaveTimestamp = Date.now();
@@ -1498,7 +1529,10 @@
             };
             saveLocalRoomCache(currentRoomCode, payload);
             if (db) {
-                setDoc(doc(db, "rooms", currentRoomCode), payload, { merge: true }).catch(() => {});
+                setDoc(doc(db, "rooms", currentRoomCode), payload, { merge: true }).catch(err => {
+                    console.warn("Cloud save failed:", err);
+                    displayCustomToast("⚠️", "Cloud sync failed – saved on this device only");
+                });
             }
             if (!silent) displayToast();
         }
@@ -1533,7 +1567,7 @@
             if (activeEffects.length === 0) banner.classList.add('hidden');
             else {
                 banner.classList.remove('hidden');
-                banner.innerHTML = `<span>⚡ Active Battlefield Rules: ${activeEffects.join('  •  ')}</span><span class="text-[10px] uppercase bg-black/20 px-2 py-0.5 rounded">Applied to Move Rolls</span>`;
+                banner.innerHTML = `<span>⚡ Active Battlefield Rules: ${esc(activeEffects.join('  •  '))}</span><span class="text-[10px] uppercase bg-black/20 px-2 py-0.5 rounded">Reference only – apply manually</span>`;
             }
         }
 
@@ -1672,6 +1706,12 @@
             const selA = document.getElementById('dist-token-a');
             const selB = document.getElementById('dist-token-b');
             if (!listEl || !gridEl) return;
+            mapTokens.forEach(t => {
+                t.id = String(t.id ?? '').replace(/[^\w-]/g, '');
+                t.label = String(t.label ?? '').replace(/[<>"]/g, '');
+                t.icon = String(t.icon ?? '').replace(/[<>"&]/g, '');
+                if (t.sprite && !/^https:\/\/[^\s"'<>]+$/.test(t.sprite)) delete t.sprite;
+            });
 
             listEl.innerHTML = mapTokens.map(t => {
                 const isSel = t.id === selectedMapTokenId;
@@ -2098,7 +2138,7 @@
         function buildTargetOptionsHTML(attackerTIdx, attackerPIdx) {
             let html = `<option value="none">-- No Specific Target (Roll Only) --</option>`;
             if (currentWildEncounter && currentWildEncounter.species) {
-                html += `<option value="wild" ${attackerTIdx !== 'wild' ? 'selected' : ''}>🌿 Wild Lv.${currentWildEncounter.level} ${currentWildEncounter.species} (HP: ${currentWildEncounter.hpCurr}/${currentWildEncounter.hpMax}, AC: ${currentWildEncounter.ac})</option>`;
+                if (attackerTIdx !== 'wild') html += `<option value="wild" selected>🌿 Wild Lv.${currentWildEncounter.level} ${currentWildEncounter.species} (HP: ${currentWildEncounter.hpCurr}/${currentWildEncounter.hpMax}, AC: ${currentWildEncounter.ac})</option>`;
             }
             appState.forEach((tr, tIdx) => {
                 (tr.pokemon || []).forEach((pk, pIdx) => {
@@ -2343,7 +2383,7 @@
             // Calculate & Auto-Deduct Damage if the move hits and has damage dice
             if (dmgDiceStr && hitSuccess) {
                 const [c, s] = dmgDiceStr.split('d').map(Number);
-                const diceCount = chosenD20 === 20 ? c * 2 : c; // Crit doubles damage dice
+                const diceCount = (isAttackRollMove && chosenD20 === 20) ? c * 2 : c; // Crit doubles damage dice
                 const { sum: sum1, rolls: rList1 } = rollMultipleDiceSum(diceCount, s);
                 const { sum: sum2 } = rollMultipleDiceSum(diceCount, s);
                 const chosenDice = transform === 'Dynamax' ? Math.max(sum1, sum2) : (transform === 'Z-Move' ? (sum1 + sum2) : sum1);
@@ -2756,10 +2796,13 @@
             const cloned = JSON.parse(JSON.stringify(currentWildEncounter));
             delete cloned.ballName; delete cloned.ballBonus; delete cloned.selectedTrainerIdx;
             trainer.pokemon.push(cloned);
+            currentWildEncounter = null;
             diceLog.push(`<span class="text-emerald-600 font-bold">🔴 Gotcha! <strong>${trainer.name || `Trainer #${tIndex+1}`}</strong> caught <strong>Lv.${cloned.level} ${cloned.species}</strong> using <strong>1x ${chosenBallName}</strong>!</span>`);
             saveData(true);
             render();
             displayCustomToast("🔴", `Caught ${cloned.species}!`);
+            renderWildEncounterCard();
+            syncTokensFromParty();
         }
 
         // --- Data Models & Trainer Ordering / Collapsing / Hiding ---
@@ -2938,7 +2981,7 @@
             const logEl = document.getElementById('dice-log');
             if (!logEl) return;
             if (diceLog.length === 0) { logEl.innerHTML = '<li class="text-gray-400 italic">Rolls will appear here...</li>'; return; }
-            logEl.innerHTML = diceLog.map(log => `<li class="border-b border-gray-200/70 pb-1">${log}</li>`).reverse().join('');
+            logEl.innerHTML = diceLog.map(log => `<li class="border-b border-gray-200/70 pb-1">${sanitizeLogHtml(log)}</li>`).reverse().join('');
         }
 
         function renderPlayers() {
@@ -2962,7 +3005,7 @@
                 <li class="flex items-center justify-between gap-2 py-0.5 ${isOnline ? 'text-gray-800' : 'text-gray-400 opacity-70'}">
                     <div class="flex items-center gap-2 truncate">
                         <span class="h-2.5 w-2.5 rounded-full shrink-0 ${isOnline ? 'bg-green-500 shadow-sm' : 'bg-gray-400'}"></span>
-                        <span class="truncate">${isGM ? '👑' : '🛡️'} ${p.name} ${isGM ? '(GM)' : ''} ${isMe ? '<span class="text-[10px] text-blue-600 font-extrabold">(You)</span>' : ''}</span>
+                        <span class="truncate">${isGM ? '👑' : '🛡️'} ${esc(p.name)} ${isGM ? '(GM)' : ''} ${isMe ? '<span class="text-[10px] text-blue-600 font-extrabold">(You)</span>' : ''}</span>
                     </div>
                     <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${isOnline ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-200 text-gray-500'}">${isOnline ? 'Online' : 'Offline'}</span>
                 </li>`;
@@ -3033,6 +3076,7 @@
                     appState[tindex].stats[field] = value;
                 } else {
                     appState[tindex][field] = value;
+                    if (field === 'level' || field === 'path') { saveData(true, true); render(); return; }
                 }
                 saveData(true, true);
             });
@@ -3064,7 +3108,7 @@
                 const activePokesSummary = (trainer.pokemon || []).filter(p => p.species).map(p =>
                     `<span class="inline-flex items-center gap-1 bg-gray-900 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
                         <img src="${getPokemonSpriteUrl(p.species, p.shiny)}" class="w-4 h-4 object-contain">
-                        ${p.species} (${p.hpCurr}/${p.hpMax})
+                        ${esc(p.species)} (${p.hpCurr}/${p.hpMax})
                     </span>`
                 ).join(' ');
 
@@ -3073,7 +3117,7 @@
                         <div class="bg-gray-800 text-white px-5 py-3.5 flex flex-wrap justify-between items-center gap-2 border-t-8 ${trainer.hiddenFromPlayers ? 'border-t-purple-600' : 'border-t-red-600'}">
                             <div class="flex flex-wrap items-center gap-2">
                                 <button onclick="toggleTrainerCollapse(${tIndex})" class="bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1 rounded text-xs font-extrabold">➕ Expand</button>
-                                <span class="font-extrabold text-base">${trainer.name || `Trainer #${tIndex + 1}`}</span>
+                                <span class="font-extrabold text-base">${esc(trainer.name || `Trainer #${tIndex + 1}`)}</span>
                                 <span class="text-xs bg-gray-700 text-yellow-300 px-2 py-0.5 rounded font-bold">Lv.${trainer.level} • HP ${trainer.hpCurr}/${trainer.hpMax}</span>
                                 ${trainer.hiddenFromPlayers ? `<span class="text-[10px] bg-purple-700 text-purple-100 px-2 py-0.5 rounded font-extrabold uppercase">👁️ Hidden from Players</span>` : ''}
                                 ${activePokesSummary}
@@ -3094,12 +3138,12 @@
                     return `
                     <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 text-xs shadow-sm">
                         <div class="flex items-center gap-2.5 flex-1 min-w-0">
-                            <img src="${iconUrl}" alt="${item.name}" class="w-8 h-8 object-contain shrink-0 bg-gray-50 rounded-lg border border-gray-100 p-1" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                            <img src="${iconUrl}" alt="${esc(item.name)}" class="w-8 h-8 object-contain shrink-0 bg-gray-50 rounded-lg border border-gray-100 p-1" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                             <div class="flex flex-col min-w-0 flex-1">
-                                <span class="font-extrabold text-gray-900 text-xs leading-tight break-words">${item.name}</span>
+                                <span class="font-extrabold text-gray-900 text-xs leading-tight break-words">${esc(item.name)}</span>
                                 <div class="flex items-center gap-1.5 mt-0.5">
                                     <span class="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded uppercase font-bold">${item.type || 'Item'}</span>
-                                    <button onclick="inspectItemText('${(item.name || '').replace(/'/g, "\\'")}')" class="text-xs text-blue-600 hover:text-blue-800 font-bold">ℹ️</button>
+                                    <button onclick="inspectItemText(${esc(JSON.stringify(item.name || ''))})" class="text-xs text-blue-600 hover:text-blue-800 font-bold">ℹ️</button>
                                 </div>
                             </div>
                         </div>
@@ -3122,14 +3166,14 @@
 
                     // Retracted / Compact Pokémon View (Shows Sprite, Name, HP, Active Badge & Quick Move Buttons!)
                     if (poke.collapsed) {
-                        const quickMoves = poke.moves.map((m, mIdx) => m.name ? `<button onclick="inspectMove(${tIndex}, ${pIndex}, ${mIdx})" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">🎲 ${m.name} (${m.ppCurr})</button>` : '').join(' ');
+                        const quickMoves = poke.moves.map((m, mIdx) => m.name ? `<button onclick="inspectMove(${tIndex}, ${pIndex}, ${mIdx})" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">🎲 ${esc(m.name)} (${m.ppCurr})</button>` : '').join(' ');
                         return `
                         <div class="rounded-2xl border-2 ${poke.isActiveInPlay ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-200 bg-gray-50'} p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                             <div class="flex items-center gap-3 min-w-0">
                                 <img src="${spriteUrl}" class="w-14 h-14 object-contain bg-white rounded-xl border border-gray-200 p-1 shrink-0">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
-                                        <strong class="text-sm font-extrabold text-gray-900">${poke.species || 'Unnamed Pokémon'}</strong>
+                                        <strong class="text-sm font-extrabold text-gray-900">${esc(poke.species || 'Unnamed Pokémon')}</strong>
                                         <span class="text-xs font-bold text-gray-500">Lv.${poke.level}</span>
                                         ${typeBadges}
                                         ${poke.isActiveInPlay ? `<span class="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-extrabold uppercase">⚔️ Active in Play</span>` : ''}
@@ -3160,7 +3204,7 @@
                         return `
                         <div class="bg-white border border-gray-200 rounded-xl p-2 mb-2 shadow-sm space-y-1.5">
                             <div class="flex items-center gap-1.5 w-full">
-                                <input type="text" list="moves-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${move.name || ''}" placeholder="Type Move or TM ${mIndex+1}..." class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-gray-900 focus:border-red-500 focus:outline-none">
+                                <input type="text" list="moves-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-mindex="${mIndex}" data-field="name" value="${esc(move.name || '')}" placeholder="Type Move or TM ${mIndex+1}..." class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-gray-900 focus:border-red-500 focus:outline-none">
                             </div>
                             <div class="flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-1.5">
@@ -3191,7 +3235,7 @@
 
                         <div class="flex items-center gap-3.5 mb-3">
                             <div class="w-20 h-20 rounded-2xl bg-white border-2 border-gray-200 flex items-center justify-center shrink-0 shadow-md overflow-hidden p-1">
-                                <img src="${spriteUrl}" alt="${poke.species || 'Pokémon'}" class="w-full h-full object-contain scale-110 drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                                <img src="${spriteUrl}" alt="${esc(poke.species || 'Pokémon')}" class="w-full h-full object-contain scale-110 drop-shadow" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                             </div>
                             <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                                 ${typeBadges || `<span class="text-xs text-gray-400 italic">Select species</span>`}
@@ -3214,7 +3258,7 @@
                             <div class="col-span-6 min-w-0">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Species (Auto-Fill)</label>
                                 <div class="flex items-center gap-1 min-w-0">
-                                    <input type="text" id="p-s-${tIndex}-${pIndex}" list="pokemon-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${poke.species || ''}" placeholder="Bulbasaur" class="flex-1 min-w-0 w-full border border-gray-300 rounded p-1.5 text-xs font-bold">
+                                    <input type="text" id="p-s-${tIndex}-${pIndex}" list="pokemon-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="species" value="${esc(poke.species || '')}" placeholder="Bulbasaur" class="flex-1 min-w-0 w-full border border-gray-300 rounded p-1.5 text-xs font-bold">
                                     <button onclick="autoFillPokemon(${tIndex}, ${pIndex})" class="shrink-0 bg-yellow-400 hover:bg-yellow-300 text-yellow-950 rounded px-2 py-1.5 text-xs font-extrabold shadow-sm">⚡</button>
                                 </div>
                             </div>
@@ -3280,7 +3324,7 @@
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Status</label>
                                 <div class="flex items-center gap-1 min-w-0">
                                     <select data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="status" class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-xs bg-white">${statusOptions}</select>
-                                    <button onclick="inspectStatus('${poke.status || 'Normal'}')" class="shrink-0 bg-amber-50 text-amber-700 border border-amber-200 rounded px-1.5 py-1 text-xs font-bold">?</button>
+                                    <button onclick="inspectStatus(${esc(JSON.stringify(poke.status || 'Normal'))})" class="shrink-0 bg-amber-50 text-amber-700 border border-amber-200 rounded px-1.5 py-1 text-xs font-bold">?</button>
                                 </div>
                             </div>
                         </div>
@@ -3293,13 +3337,13 @@
                             <div class="col-span-4 min-w-0">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Ability</label>
                                 <div class="flex items-center gap-1 min-w-0">
-                                    <input type="text" list="abilities-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${poke.ability || ''}" placeholder="Overgrow..." class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-xs">
-                                    <button onclick="inspectAbilityText('${(poke.ability || '').replace(/'/g, "\\'")}')" class="shrink-0 bg-purple-50 text-purple-700 border border-purple-200 rounded px-1.5 py-1 text-xs font-bold">ℹ️</button>
+                                    <input type="text" list="abilities-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="ability" value="${esc(poke.ability || '')}" placeholder="Overgrow..." class="flex-1 min-w-0 border border-gray-300 rounded p-1 text-xs">
+                                    <button onclick="inspectAbilityText(${esc(JSON.stringify(poke.ability || ''))})" class="shrink-0 bg-purple-50 text-purple-700 border border-purple-200 rounded px-1.5 py-1 text-xs font-bold">ℹ️</button>
                                 </div>
                             </div>
                             <div class="col-span-4 min-w-0">
                                 <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5 truncate">Feats / Held</label>
-                                <input type="text" list="feats-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="feats" value="${poke.feats || ''}" placeholder="Tough..." class="w-full min-w-0 border border-gray-300 rounded p-1 text-xs">
+                                <input type="text" list="feats-datalist" data-tindex="${tIndex}" data-pindex="${pIndex}" data-field="feats" value="${esc(poke.feats || '')}" placeholder="Tough..." class="w-full min-w-0 border border-gray-300 rounded p-1 text-xs">
                             </div>
                         </div>
 
@@ -3331,7 +3375,7 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <button onclick="toggleTrainerCollapse(${tIndex})" class="bg-gray-700 hover:bg-gray-600 text-white px-2 py-0.5 rounded text-xs font-extrabold" title="Collapse Trainer to Compact Bar">➖</button>
                             <span class="bg-red-600 text-[10px] font-extrabold px-2 py-0.5 rounded">#${tIndex + 1}</span>
-                            <span class="font-extrabold text-sm">${trainer.name || `Trainer #${tIndex + 1}`}</span>
+                            <span class="font-extrabold text-sm">${esc(trainer.name || `Trainer #${tIndex + 1}`)}</span>
                             <span class="text-xs bg-gray-700 text-yellow-300 px-2 py-0.5 rounded font-bold">PB: +${tPB}</span>
                             <span class="text-xs bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded font-bold">Pokéslots: ${trainer.pokemon.length}/${maxSlots}</span>
                             <span class="text-xs bg-blue-900/80 text-blue-200 px-2 py-0.5 rounded font-bold">SR ≤ ${maxSR}</span>
@@ -3354,7 +3398,7 @@
                                 <div class="flex gap-2">
                                     <div class="flex-1">
                                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Trainer Name</label>
-                                        <input type="text" data-tindex="${tIndex}" data-field="name" value="${trainer.name}" class="w-full border border-gray-300 rounded-lg p-1.5 font-bold text-sm" placeholder="Red">
+                                        <input type="text" data-tindex="${tIndex}" data-field="name" value="${esc(trainer.name)}" class="w-full border border-gray-300 rounded-lg p-1.5 font-bold text-sm" placeholder="Red">
                                     </div>
                                     <div class="w-16">
                                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Level</label>
@@ -3364,7 +3408,7 @@
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Trainer Path</label>
-                                        <input type="text" list="paths-datalist" data-tindex="${tIndex}" data-field="path" value="${trainer.path || ''}" class="w-full border border-gray-300 rounded-lg p-1.5 text-xs font-semibold" placeholder="Ace Trainer...">
+                                        <input type="text" list="paths-datalist" data-tindex="${tIndex}" data-field="path" value="${esc(trainer.path || '')}" class="w-full border border-gray-300 rounded-lg p-1.5 text-xs font-semibold" placeholder="Ace Trainer...">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Pokédollars (₽)</label>
@@ -3448,8 +3492,10 @@
         function closeModal() { document.getElementById('modal-backdrop').classList.add('hidden'); }
 
         function executeClear() {
+            const keepPlayers = sessionPlayers;
             resetLocalSessionVariables();
             appState = [getNewTrainer()];
+            sessionPlayers = keepPlayers;
             saveData(true);
             closeModal();
             render();
